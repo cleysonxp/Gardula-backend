@@ -15,4 +15,8 @@
     <ProjectReference Include="..\Gardula.Infrastructure\Gardula.Infrastructure.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Controllers\" />
+  </ItemGroup>
+
 </Project>
