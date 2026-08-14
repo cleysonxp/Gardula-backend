@@ -1,3 +1,5 @@
+using Gardula.Infrastructure.Persistence;
+using Microsoft.EntityFrameworkCore;
 
 namespace Gardula.Api
 {
@@ -10,6 +12,17 @@ namespace Gardula.Api
             // Add services to the container.
 
             builder.Services.AddControllers();
+
+            builder.Services.AddDbContext<GardulaDbContext>(options =>
+            {
+                var connectionString = builder.Configuration
+                    .GetConnectionString("GardulaDatabase");
+
+                options.UseMySql(
+                    connectionString,
+                    ServerVersion.AutoDetect(connectionString));
+            });
+
             // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
             builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddSwaggerGen();
@@ -26,7 +39,6 @@ namespace Gardula.Api
             app.UseHttpsRedirection();
 
             app.UseAuthorization();
-
 
             app.MapControllers();
 
