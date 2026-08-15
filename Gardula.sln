@@ -11,6 +11,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Gardula.Infrastructure", "G
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Gardula.Api", "Gardula.Api\Gardula.Api.csproj", "{20F3745C-5594-416E-B73E-75C03CC7D37A}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Gardula.UnitTests", "Gardula.UnitTests\Gardula.UnitTests.csproj", "{75AA5A8B-CFEB-46EB-9E1F-127819BF9ECA}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -33,6 +35,10 @@ Global
 		{20F3745C-5594-416E-B73E-75C03CC7D37A}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{20F3745C-5594-416E-B73E-75C03CC7D37A}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{20F3745C-5594-416E-B73E-75C03CC7D37A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{75AA5A8B-CFEB-46EB-9E1F-127819BF9ECA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{75AA5A8B-CFEB-46EB-9E1F-127819BF9ECA}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{75AA5A8B-CFEB-46EB-9E1F-127819BF9ECA}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{75AA5A8B-CFEB-46EB-9E1F-127819BF9ECA}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
