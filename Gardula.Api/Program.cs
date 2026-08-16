@@ -1,3 +1,5 @@
+using Gardula.Api.Exceptions;
+using Gardula.Application;
 using Gardula.Infrastructure;
 using Gardula.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
@@ -10,10 +12,22 @@ public class Program
     {
         var builder = WebApplication.CreateBuilder(args);
 
-        // Add services to the container.
-
+        // Controllers
         builder.Services.AddControllers();
 
+        // Problem Details
+        builder.Services.AddProblemDetails();
+
+        // Global Exception Handler
+        builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
+
+        // Application
+        builder.Services.AddApplication();
+
+        // Infrastructure
+        builder.Services.AddInfrastructure();
+
+        // Database
         builder.Services.AddDbContext<GardulaDbContext>(options =>
         {
             var connectionString = builder.Configuration
@@ -24,14 +38,16 @@ public class Program
                 ServerVersion.AutoDetect(connectionString));
         });
 
-        builder.Services.AddInfrastructure();
-
+        // Swagger
         builder.Services.AddEndpointsApiExplorer();
         builder.Services.AddSwaggerGen();
 
         var app = builder.Build();
 
-        // Configure the HTTP request pipeline.
+        // Global Exception Handler
+        app.UseExceptionHandler();
+
+        // Swagger
         if (app.Environment.IsDevelopment())
         {
             app.UseSwagger();
