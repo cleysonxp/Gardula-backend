@@ -19,6 +19,16 @@ public class FakeUserRepository : IUserRepository
         return Task.FromResult(exists);
     }
 
+    public Task<User?> GetByEmailAsync(
+        string email,
+        CancellationToken cancellationToken = default)
+    {
+        var user = _users.FirstOrDefault(
+            user => user.Email == email);
+
+        return Task.FromResult(user);
+    }
+
     public Task AddAsync(
         User user,
         CancellationToken cancellationToken = default)

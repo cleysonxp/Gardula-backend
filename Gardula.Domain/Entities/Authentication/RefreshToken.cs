@@ -14,19 +14,29 @@ public class RefreshToken
 
     public DateTimeOffset? RevokedAt { get; private set; }
 
+    private RefreshToken()
+    {
+    }
+
     public RefreshToken(
         int userId,
         string tokenHash,
         DateTimeOffset expiresAt)
     {
         if (userId <= 0)
-            throw new ArgumentException("User ID must be greater than zero.", nameof(userId));
+            throw new ArgumentException(
+                "UserId must be greater than zero.",
+                nameof(userId));
 
         if (string.IsNullOrWhiteSpace(tokenHash))
-            throw new ArgumentException("Token hash is required.", nameof(tokenHash));
+            throw new ArgumentException(
+                "Token hash is required.",
+                nameof(tokenHash));
 
         if (expiresAt <= DateTimeOffset.UtcNow)
-            throw new ArgumentException("Token expiration must be in the future.", nameof(expiresAt));
+            throw new ArgumentException(
+                "Expiration date must be in the future.",
+                nameof(expiresAt));
 
         UserId = userId;
         TokenHash = tokenHash;
@@ -34,26 +44,17 @@ public class RefreshToken
         CreatedAt = DateTimeOffset.UtcNow;
     }
 
-    public bool IsExpired()
+    public void Revoke()
     {
-        return DateTimeOffset.UtcNow >= ExpiresAt;
-    }
+        if (RevokedAt.HasValue)
+            return;
 
-    public bool IsRevoked()
-    {
-        return RevokedAt.HasValue;
+        RevokedAt = DateTimeOffset.UtcNow;
     }
 
     public bool IsActive()
     {
-        return !IsExpired() && !IsRevoked();
-    }
-
-    public void Revoke()
-    {
-        if (IsRevoked())
-            return;
-
-        RevokedAt = DateTimeOffset.UtcNow;
+        return !RevokedAt.HasValue &&
+               ExpiresAt > DateTimeOffset.UtcNow;
     }
 }

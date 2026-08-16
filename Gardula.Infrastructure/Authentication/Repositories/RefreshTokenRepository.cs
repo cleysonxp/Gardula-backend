@@ -5,43 +5,42 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Gardula.Infrastructure.Authentication.Repositories;
 
-public class UserRepository : IUserRepository
+public class RefreshTokenRepository : IRefreshTokenRepository
 {
     private readonly GardulaDbContext _context;
 
-    public UserRepository(GardulaDbContext context)
+    public RefreshTokenRepository(GardulaDbContext context)
     {
         _context = context;
     }
 
-    public async Task<bool> ExistsByEmailAsync(
-        string email,
+    public async Task<RefreshToken?> GetByUserIdAsync(
+        int userId,
         CancellationToken cancellationToken = default)
     {
-        return await _context.Users
-            .AnyAsync(
-                user => user.Email == email,
+        return await _context.RefreshTokens
+            .FirstOrDefaultAsync(
+                token => token.UserId == userId,
                 cancellationToken);
     }
 
     public async Task AddAsync(
-        User user,
+        RefreshToken refreshToken,
         CancellationToken cancellationToken = default)
     {
-        await _context.Users.AddAsync(
-            user,
+        await _context.RefreshTokens.AddAsync(
+            refreshToken,
             cancellationToken);
 
         await _context.SaveChangesAsync(cancellationToken);
     }
 
-    public async Task<User?> GetByEmailAsync(
-        string email,
+    public async Task UpdateAsync(
+        RefreshToken refreshToken,
         CancellationToken cancellationToken = default)
     {
-        return await _context.Users
-            .FirstOrDefaultAsync(
-                user => user.Email == email,
-                cancellationToken);
+        _context.RefreshTokens.Update(refreshToken);
+
+        await _context.SaveChangesAsync(cancellationToken);
     }
 }

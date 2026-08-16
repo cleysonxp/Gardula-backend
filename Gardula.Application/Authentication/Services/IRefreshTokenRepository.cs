@@ -2,17 +2,17 @@
 
 namespace Gardula.Application.Authentication.Services;
 
-public interface IUserRepository
+public interface IRefreshTokenRepository
 {
-    Task<bool> ExistsByEmailAsync(
-        string email,
-        CancellationToken cancellationToken = default);
-
-    Task<User?> GetByEmailAsync(
-        string email,
+    Task<RefreshToken?> GetByUserIdAsync(
+        int userId,
         CancellationToken cancellationToken = default);
 
     Task AddAsync(
-        User user,
+        RefreshToken refreshToken,
+        CancellationToken cancellationToken = default);
+
+    Task UpdateAsync(
+        RefreshToken refreshToken,
         CancellationToken cancellationToken = default);
 }
