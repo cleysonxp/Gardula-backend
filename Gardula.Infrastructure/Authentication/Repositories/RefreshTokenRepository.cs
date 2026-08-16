@@ -43,4 +43,14 @@ public class RefreshTokenRepository : IRefreshTokenRepository
 
         await _context.SaveChangesAsync(cancellationToken);
     }
+
+    public async Task<RefreshToken?> GetByTokenHashAsync(
+        string tokenHash,
+        CancellationToken cancellationToken = default)
+    {
+        return await _context.RefreshTokens
+            .FirstOrDefaultAsync(
+                token => token.TokenHash == tokenHash,
+                cancellationToken);
+    }
 }

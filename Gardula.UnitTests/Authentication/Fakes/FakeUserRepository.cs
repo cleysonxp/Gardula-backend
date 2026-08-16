@@ -37,4 +37,14 @@ public class FakeUserRepository : IUserRepository
 
         return Task.CompletedTask;
     }
+
+    public Task<User?> GetByIdAsync(
+        int id,
+        CancellationToken cancellationToken = default)
+    {
+        var user = _users.FirstOrDefault(
+            user => user.Id == id);
+
+        return Task.FromResult(user);
+    }
 }

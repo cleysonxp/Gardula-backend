@@ -10,6 +10,8 @@ public static class DependencyInjection
     {
         services.AddScoped<RegisterService>();
         services.AddScoped<LoginService>();
+        services.AddScoped<IRefreshTokenService, RefreshTokenService>();
+        services.AddScoped<ILogoutService, LogoutService>();
 
         return services;
     }

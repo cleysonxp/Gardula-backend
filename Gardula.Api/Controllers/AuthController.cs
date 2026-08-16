@@ -1,9 +1,9 @@
-﻿using Gardula.Application.Authentication.DTOs;
+﻿using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
+using Gardula.Application.Authentication.DTOs;
 using Gardula.Application.Authentication.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using System.Security.Claims;
-using System.IdentityModel.Tokens.Jwt;
 
 namespace Gardula.Api.Controllers;
 
@@ -13,13 +13,19 @@ public class AuthController : ControllerBase
 {
     private readonly RegisterService _registerService;
     private readonly LoginService _loginService;
+    private readonly IRefreshTokenService _refreshTokenService;
+    private readonly ILogoutService _logoutService;
 
     public AuthController(
         RegisterService registerService,
-        LoginService loginService)
+        LoginService loginService,
+        IRefreshTokenService refreshTokenService,
+        ILogoutService logoutService)
     {
         _registerService = registerService;
         _loginService = loginService;
+        _refreshTokenService = refreshTokenService;
+        _logoutService = logoutService;
     }
 
     [HttpPost("register")]
@@ -57,6 +63,22 @@ public class AuthController : ControllerBase
         return Ok(response);
     }
 
+    [HttpPost("refresh")]
+    [ProducesResponseType(
+        typeof(LoginResponse),
+        StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<ActionResult<LoginResponse>> Refresh(
+        RefreshTokenRequest request,
+        CancellationToken cancellationToken)
+    {
+        var response = await _refreshTokenService.ExecuteAsync(
+            request,
+            cancellationToken);
+
+        return Ok(response);
+    }
+
     [HttpGet("me")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK)]
@@ -71,5 +93,19 @@ public class AuthController : ControllerBase
             message = "Authenticated successfully.",
             userId
         });
+    }
+
+    [HttpPost("logout")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<IActionResult> Logout(
+    LogoutRequest request,
+    CancellationToken cancellationToken)
+    {
+        await _logoutService.ExecuteAsync(
+            request,
+            cancellationToken);
+
+        return NoContent();
     }
 }

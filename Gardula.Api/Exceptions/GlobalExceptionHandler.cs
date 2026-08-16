@@ -49,6 +49,12 @@ public class GlobalExceptionHandler : IExceptionHandler
                 problemDetails.Title = "Invalid credentials.";
                 problemDetails.Detail = exception.Message;
                 break;
+
+            case InvalidRefreshTokenException:
+                problemDetails.Status = StatusCodes.Status401Unauthorized;
+                problemDetails.Title = "Invalid refresh token.";
+                problemDetails.Detail = exception.Message;
+                break;
         }
 
         httpContext.Response.StatusCode =

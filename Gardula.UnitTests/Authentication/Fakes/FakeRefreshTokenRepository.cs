@@ -35,4 +35,15 @@ public class FakeRefreshTokenRepository : IRefreshTokenRepository
     {
         return Task.CompletedTask;
     }
+
+    public Task<RefreshToken?> GetByTokenHashAsync(
+        string tokenHash,
+        CancellationToken cancellationToken = default)
+    {
+        var token = _refreshTokens
+            .FirstOrDefault(
+                refreshToken => refreshToken.TokenHash == tokenHash);
+
+        return Task.FromResult(token);
+    }
 }

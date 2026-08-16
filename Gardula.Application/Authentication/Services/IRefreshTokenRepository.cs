@@ -8,6 +8,10 @@ public interface IRefreshTokenRepository
         int userId,
         CancellationToken cancellationToken = default);
 
+    Task<RefreshToken?> GetByTokenHashAsync(
+        string tokenHash,
+        CancellationToken cancellationToken = default);
+
     Task AddAsync(
         RefreshToken refreshToken,
         CancellationToken cancellationToken = default);
