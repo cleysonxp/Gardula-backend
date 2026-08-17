@@ -1,5 +1,8 @@
+using Gardula.Api;
 using Gardula.Api.Exceptions;
+using Gardula.Api.Services;
 using Gardula.Application;
+using Gardula.Application.Common.Services;
 using Gardula.Infrastructure;
 using Gardula.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
@@ -15,6 +18,21 @@ public class Program
         // Controllers
         builder.Services.AddControllers();
 
+        // HttpContext
+        builder.Services.AddHttpContextAccessor();
+
+        // CORS
+        builder.Services.AddCors(options =>
+        {
+            options.AddPolicy("Frontend", policy =>
+            {
+                policy
+                    .WithOrigins("http://localhost:5173")
+                    .AllowAnyHeader()
+                    .AllowAnyMethod();
+            });
+        });
+
         // Problem Details
         builder.Services.AddProblemDetails();
 
@@ -23,6 +41,9 @@ public class Program
 
         // Application
         builder.Services.AddApplication();
+
+        // Current User
+        builder.Services.AddScoped<ICurrentUserService, CurrentUserService>();
 
         // Infrastructure
         builder.Services.AddInfrastructure(builder.Configuration);
@@ -87,6 +108,8 @@ public class Program
 
         app.UseHttpsRedirection();
 
+        app.UseCors("Frontend");
+
         // Authentication
         app.UseAuthentication();
 
@@ -96,5 +119,6 @@ public class Program
         app.MapControllers();
 
         app.Run();
+
     }
 }

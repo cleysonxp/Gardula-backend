@@ -14,4 +14,9 @@
     <ProjectReference Include="..\Gardula.Domain\Gardula.Domain.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Finance\Accounts\Exceptions\" />
+    <Folder Include="Finance\Accounts\Validation\" />
+  </ItemGroup>
+
 </Project>

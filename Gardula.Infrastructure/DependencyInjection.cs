@@ -1,7 +1,9 @@
 ﻿using Gardula.Application.Authentication.Services;
+using Gardula.Application.Finance.Accounts.Services;
 using Gardula.Infrastructure.Authentication.Configuration;
 using Gardula.Infrastructure.Authentication.Repositories;
 using Gardula.Infrastructure.Authentication.Services;
+using Gardula.Infrastructure.Finance.Repositories;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -51,6 +53,8 @@ public static class DependencyInjection
         services.AddScoped<IPasswordHasher, Argon2PasswordHasher>();
 
         services.AddScoped<IUserRepository, UserRepository>();
+
+        services.AddScoped<IAccountRepository, AccountRepository>();
 
         services.AddScoped<ITokenService, JwtTokenService>();
 
