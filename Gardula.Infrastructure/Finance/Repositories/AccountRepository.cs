@@ -19,7 +19,9 @@ public class AccountRepository : IAccountRepository
         CancellationToken cancellationToken = default)
     {
         return await _context.Accounts
-            .Where(account => account.UserId == userId)
+            .Where(account =>
+                account.UserId == userId &&
+                account.IsActive)
             .ToListAsync(cancellationToken);
     }
 
@@ -44,6 +46,12 @@ public class AccountRepository : IAccountRepository
             account,
             cancellationToken);
 
+        await _context.SaveChangesAsync(cancellationToken);
+    }
+
+    public async Task SaveChangesAsync(
+        CancellationToken cancellationToken = default)
+    {
         await _context.SaveChangesAsync(cancellationToken);
     }
 }

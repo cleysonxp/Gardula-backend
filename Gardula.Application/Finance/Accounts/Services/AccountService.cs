@@ -64,4 +64,82 @@ public class AccountService
             .ToList();
     }
 
+    public async Task<AccountResponse?> GetByIdAsync(
+        int id,
+        CancellationToken cancellationToken = default)
+    {
+        var userId = _currentUserService.UserId;
+
+        var account = await _accountRepository.GetByIdAsync(
+            id,
+            userId,
+            cancellationToken);
+
+        if (account is null)
+            return null;
+
+        return new AccountResponse(
+            account.Id,
+            account.Name,
+            (int)account.Type,
+            account.InitialBalance,
+            account.IsActive,
+            account.CreatedAt,
+            account.UpdatedAt);
+    }
+
+    public async Task<AccountResponse?> UpdateAsync(
+        int id,
+        UpdateAccountRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        var userId = _currentUserService.UserId;
+
+        var account = await _accountRepository.GetByIdAsync(
+            id,
+            userId,
+            cancellationToken);
+
+        if (account is null)
+            return null;
+
+        account.Update(
+            request.Name.Trim(),
+            (AccountType)request.Type);
+
+        await _accountRepository.SaveChangesAsync(
+            cancellationToken);
+
+        return new AccountResponse(
+            account.Id,
+            account.Name,
+            (int)account.Type,
+            account.InitialBalance,
+            account.IsActive,
+            account.CreatedAt,
+            account.UpdatedAt);
+    }
+
+    public async Task<bool> DeleteAsync(
+        int id,
+        CancellationToken cancellationToken = default)
+    {
+        var userId = _currentUserService.UserId;
+
+        var account = await _accountRepository.GetByIdAsync(
+            id,
+            userId,
+            cancellationToken);
+
+        if (account is null)
+            return false;
+
+        account.Deactivate();
+
+        await _accountRepository.SaveChangesAsync(
+            cancellationToken);
+
+        return true;
+    }
+
 }

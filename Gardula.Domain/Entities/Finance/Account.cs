@@ -48,6 +48,20 @@ public class Account
         UpdatedAt = CreatedAt;
     }
 
+    public void Update(
+        string name,
+        AccountType type)
+    {
+        if (string.IsNullOrWhiteSpace(name))
+            throw new ArgumentException(
+                "Name is required.",
+                nameof(name));
+
+        Name = name;
+        Type = type;
+        UpdatedAt = DateTimeOffset.UtcNow;
+    }
+
     public void Activate()
     {
         IsActive = true;

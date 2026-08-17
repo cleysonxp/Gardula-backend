@@ -49,4 +49,65 @@ public class AccountsController : ControllerBase
 
         return Ok(response);
     }
+
+    [HttpGet("{id:int}")]
+    [ProducesResponseType(
+    typeof(AccountResponse),
+    StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<AccountResponse>> GetById(
+    int id,
+    CancellationToken cancellationToken)
+    {
+        var response = await _accountService.GetByIdAsync(
+            id,
+            cancellationToken);
+
+        if (response is null)
+            return NotFound();
+
+        return Ok(response);
+    }
+
+    [HttpPut("{id:int}")]
+    [ProducesResponseType(
+    typeof(AccountResponse),
+    StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<AccountResponse>> Update(
+    int id,
+    UpdateAccountRequest request,
+    CancellationToken cancellationToken)
+    {
+        var response = await _accountService.UpdateAsync(
+            id,
+            request,
+            cancellationToken);
+
+        if (response is null)
+            return NotFound();
+
+        return Ok(response);
+    }
+
+    [HttpDelete("{id:int}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> Delete(
+    int id,
+    CancellationToken cancellationToken)
+    {
+        var deleted = await _accountService.DeleteAsync(
+            id,
+            cancellationToken);
+
+        if (!deleted)
+            return NotFound();
+
+        return NoContent();
+    }
 }
