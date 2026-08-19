@@ -17,7 +17,7 @@ public class CategoryConfiguration : IEntityTypeConfiguration<Category>
             .ValueGeneratedOnAdd();
 
         builder.Property(category => category.UserId)
-            .IsRequired();
+            .IsRequired(false);
 
         builder.Property(category => category.Name)
             .IsRequired()

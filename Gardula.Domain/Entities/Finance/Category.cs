@@ -4,7 +4,7 @@ public class Category
 {
     public int Id { get; private set; }
 
-    public int UserId { get; private set; }
+    public int? UserId { get; private set; }
 
     public string Name { get; private set; } = string.Empty;
 
@@ -19,12 +19,12 @@ public class Category
     public DateTimeOffset UpdatedAt { get; private set; }
 
     public Category(
-        int userId,
-        string name,
-        CategoryType type,
-        int? parentCategoryId = null)
+    int? userId,
+    string name,
+    CategoryType type,
+    int? parentCategoryId = null)
     {
-        if (userId <= 0)
+        if (userId.HasValue && userId.Value <= 0)
             throw new ArgumentException(
                 "UserId must be greater than zero.",
                 nameof(userId));
