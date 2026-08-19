@@ -1,5 +1,6 @@
 ﻿using Gardula.Application.Authentication.Services;
 using Gardula.Application.Finance.Accounts.Services;
+using Gardula.Application.Finance.Cards.Services;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Gardula.Application;
@@ -15,6 +16,7 @@ public static class DependencyInjection
         services.AddScoped<ILogoutService, LogoutService>();
 
         services.AddScoped<AccountService>();
+        services.AddScoped<CardService>();
 
         return services;
     }

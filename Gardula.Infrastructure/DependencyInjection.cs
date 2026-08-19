@@ -1,5 +1,6 @@
 ﻿using Gardula.Application.Authentication.Services;
 using Gardula.Application.Finance.Accounts.Services;
+using Gardula.Application.Finance.Cards.Services;
 using Gardula.Infrastructure.Authentication.Configuration;
 using Gardula.Infrastructure.Authentication.Repositories;
 using Gardula.Infrastructure.Authentication.Services;
@@ -55,6 +56,7 @@ public static class DependencyInjection
         services.AddScoped<IUserRepository, UserRepository>();
 
         services.AddScoped<IAccountRepository, AccountRepository>();
+        services.AddScoped<ICardRepository, CardRepository>();
 
         services.AddScoped<ITokenService, JwtTokenService>();
 

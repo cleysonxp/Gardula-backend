@@ -16,6 +16,7 @@
 
   <ItemGroup>
     <Folder Include="Finance\Accounts\Exceptions\" />
+    <Folder Include="Finance\Accounts\Repositories\" />
     <Folder Include="Finance\Accounts\Validation\" />
   </ItemGroup>
 
