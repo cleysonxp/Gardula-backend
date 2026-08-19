@@ -3,4 +3,5 @@
 public record CreateAccountRequest(
     string Name,
     int Type,
-    decimal InitialBalance);
+    decimal InitialBalance,
+    string Color);

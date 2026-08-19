@@ -2,6 +2,18 @@
 
 public class Account
 {
+    private static readonly string[] AllowedColors =
+    [
+        "violet",
+        "blue",
+        "green",
+        "orange",
+        "red",
+        "pink",
+        "amber",
+        "slate"
+    ];
+
     public int Id { get; private set; }
 
     public int UserId { get; private set; }
@@ -11,6 +23,8 @@ public class Account
     public AccountType Type { get; private set; }
 
     public decimal InitialBalance { get; private set; }
+
+    public string Color { get; private set; } = string.Empty;
 
     public bool IsActive { get; private set; } = true;
 
@@ -22,7 +36,8 @@ public class Account
         int userId,
         string name,
         AccountType type,
-        decimal initialBalance)
+        decimal initialBalance,
+        string color)
     {
         if (userId <= 0)
             throw new ArgumentException(
@@ -39,10 +54,16 @@ public class Account
                 "Initial balance cannot be negative.",
                 nameof(initialBalance));
 
+        if (!AllowedColors.Contains(color))
+            throw new ArgumentException(
+                "Invalid account color.",
+                nameof(color));
+
         UserId = userId;
         Name = name;
         Type = type;
         InitialBalance = initialBalance;
+        Color = color;
 
         CreatedAt = DateTimeOffset.UtcNow;
         UpdatedAt = CreatedAt;

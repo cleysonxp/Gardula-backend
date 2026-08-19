@@ -5,6 +5,7 @@ public record AccountResponse(
     string Name,
     int Type,
     decimal InitialBalance,
+    string Color,
     bool IsActive,
     DateTimeOffset CreatedAt,
     DateTimeOffset UpdatedAt);

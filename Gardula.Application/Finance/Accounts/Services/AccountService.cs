@@ -27,7 +27,8 @@ public class AccountService
             userId,
             request.Name.Trim(),
             (AccountType)request.Type,
-            request.InitialBalance);
+            request.InitialBalance,
+            request.Color.Trim());
 
         await _accountRepository.AddAsync(
             account,
@@ -38,6 +39,7 @@ public class AccountService
             account.Name,
             (int)account.Type,
             account.InitialBalance,
+            account.Color,
             account.IsActive,
             account.CreatedAt,
             account.UpdatedAt);
@@ -58,6 +60,7 @@ public class AccountService
                 account.Name,
                 (int)account.Type,
                 account.InitialBalance,
+                account.Color,
                 account.IsActive,
                 account.CreatedAt,
                 account.UpdatedAt))
@@ -83,6 +86,7 @@ public class AccountService
             account.Name,
             (int)account.Type,
             account.InitialBalance,
+            account.Color,
             account.IsActive,
             account.CreatedAt,
             account.UpdatedAt);
@@ -115,6 +119,7 @@ public class AccountService
             account.Name,
             (int)account.Type,
             account.InitialBalance,
+            account.Color,
             account.IsActive,
             account.CreatedAt,
             account.UpdatedAt);
