@@ -138,8 +138,8 @@ public class TransactionRepository : ITransactionRepository
     }
 
     public async Task<TransactionSummaryResponse> GetSummaryAsync(
-    int userId,
-    TransactionFilterRequest filter,
+        int userId,
+        TransactionFilterRequest filter,
     CancellationToken cancellationToken = default)
     {
         var query = _context.Transactions
@@ -229,6 +229,119 @@ public class TransactionRepository : ITransactionRepository
                 cancellationToken);
     }
 
+    public async Task<TransactionDetailResponse?> GetDetailByIdAsync(
+        int id,
+        int userId,
+        CancellationToken cancellationToken = default)
+    {
+        var query =
+            from transactionEntity in _context.Transactions
+
+            join category in _context.Categories
+                on transactionEntity.CategoryId equals category.Id
+                into categoryGroup
+            from category in categoryGroup.DefaultIfEmpty()
+
+            join account in _context.Accounts
+                on transactionEntity.AccountId equals account.Id
+                into accountGroup
+            from account in accountGroup.DefaultIfEmpty()
+
+            join card in _context.Cards
+                on transactionEntity.CardId equals card.Id
+                into cardGroup
+            from card in cardGroup.DefaultIfEmpty()
+
+            join transfer in _context.Transfers
+                on transactionEntity.TransferId equals transfer.Id
+                into transferGroup
+            from transfer in transferGroup.DefaultIfEmpty()
+
+            join sourceAccount in _context.Accounts
+                on transfer.SourceAccountId equals sourceAccount.Id
+                into sourceAccountGroup
+            from sourceAccount in sourceAccountGroup.DefaultIfEmpty()
+
+            join destinationAccount in _context.Accounts
+                on transfer.DestinationAccountId equals destinationAccount.Id
+                into destinationAccountGroup
+            from destinationAccount in destinationAccountGroup.DefaultIfEmpty()
+
+            where transactionEntity.Id == id &&
+                  transactionEntity.UserId == userId
+
+            select new
+            {
+                Transaction = transactionEntity,
+                Category = category,
+                Account = account,
+                Card = card,
+                Transfer = transfer,
+                SourceAccount = sourceAccount,
+                DestinationAccount = destinationAccount
+            };
+
+        var item = await query.FirstOrDefaultAsync(
+            cancellationToken);
+
+        if (item is null)
+            return null;
+
+        var transaction = item.Transaction;
+
+        return new TransactionDetailResponse(
+            transaction.Id,
+            transaction.Description,
+            transaction.Amount,
+            transaction.Date,
+            (int)transaction.Type,
+            transaction.Type.ToString(),
+            (int)transaction.PaymentMethod,
+            transaction.PaymentMethod.ToString(),
+
+            item.Category is not null
+                ? new CategorySummaryResponse(
+                    item.Category.Id,
+                    item.Category.Name)
+                : null,
+
+            item.Account is not null
+                ? new AccountSummaryResponse(
+                    item.Account.Id,
+                    item.Account.Name)
+                : null,
+
+            item.Card is not null
+                ? new CardSummaryResponse(
+                    item.Card.Id,
+                    item.Card.Name,
+                    item.Card.LastFourDigits)
+                : null,
+
+            transaction.InstallmentGroupId.HasValue
+                ? new InstallmentSummaryResponse(
+                    transaction.InstallmentGroupId.Value,
+                    transaction.InstallmentNumber!.Value,
+                    transaction.TotalInstallments!.Value)
+                : null,
+
+            item.Transfer is not null &&
+            item.SourceAccount is not null &&
+            item.DestinationAccount is not null
+                ? new TransferDetailResponse(
+                    item.Transfer.Id,
+                    new AccountSummaryResponse(
+                        item.SourceAccount.Id,
+                        item.SourceAccount.Name),
+                    new AccountSummaryResponse(
+                        item.DestinationAccount.Id,
+                        item.DestinationAccount.Name))
+                : null,
+
+            transaction.CreatedAt,
+            transaction.UpdatedAt);
+    }
+
     public async Task AddAsync(
         Transaction transaction,
         CancellationToken cancellationToken = default)
@@ -242,5 +355,14 @@ public class TransactionRepository : ITransactionRepository
         CancellationToken cancellationToken = default)
     {
         await _context.SaveChangesAsync(cancellationToken);
+    }
+
+    public Task UpdateAsync(
+        Transaction transaction,
+        CancellationToken cancellationToken = default)
+    {
+        _context.Transactions.Update(transaction);
+
+        return Task.CompletedTask;
     }
 }

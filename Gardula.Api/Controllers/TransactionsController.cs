@@ -54,15 +54,15 @@ public class TransactionsController : ControllerBase
 
     [HttpGet("{id:int}")]
     [ProducesResponseType(
-        typeof(TransactionResponse),
+        typeof(TransactionDetailResponse),
         StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<ActionResult<TransactionResponse>> GetById(
-        int id,
-        CancellationToken cancellationToken)
+    public async Task<ActionResult<TransactionDetailResponse>> GetById(
+    int id,
+    CancellationToken cancellationToken)
     {
-        var response = await _transactionService.GetByIdAsync(
+        var response = await _transactionService.GetDetailByIdAsync(
             id,
             cancellationToken);
 
@@ -86,5 +86,32 @@ public class TransactionsController : ControllerBase
             cancellationToken);
 
         return Ok(response);
+    }
+
+    [HttpPut("{id:int}")]
+    [ProducesResponseType(
+        typeof(TransactionResponse),
+        StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<TransactionResponse>> Update(
+    int id,
+    UpdateTransactionRequest request,
+    CancellationToken cancellationToken)
+    {
+        try
+        {
+            var response = await _transactionService.UpdateAsync(
+                id,
+                request,
+                cancellationToken);
+
+            return Ok(response);
+        }
+        catch (KeyNotFoundException)
+        {
+            return NotFound();
+        }
     }
 }

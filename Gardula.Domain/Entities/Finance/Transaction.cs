@@ -174,4 +174,79 @@ public class Transaction
         CreatedAt = DateTimeOffset.UtcNow;
         UpdatedAt = CreatedAt;
     }
+
+    public void Update(
+        decimal amount,
+        PaymentMethod paymentMethod,
+        string description,
+        DateTimeOffset date,
+        int? accountId,
+        int? cardId,
+        int? categoryId)
+    {
+        if (amount <= 0)
+            throw new ArgumentException(
+                "Transaction amount must be greater than zero.",
+                nameof(amount));
+
+        if (string.IsNullOrWhiteSpace(description))
+            throw new ArgumentException(
+                "Description is required.",
+                nameof(description));
+
+        if (accountId.HasValue && accountId.Value <= 0)
+            throw new ArgumentException(
+                "AccountId must be greater than zero.",
+                nameof(accountId));
+
+        if (cardId.HasValue && cardId.Value <= 0)
+            throw new ArgumentException(
+                "CardId must be greater than zero.",
+                nameof(cardId));
+
+        if (categoryId.HasValue && categoryId.Value <= 0)
+            throw new ArgumentException(
+                "CategoryId must be greater than zero.",
+                nameof(categoryId));
+
+        if (categoryId is null)
+            throw new ArgumentException(
+                "CategoryId is required for income and expense transactions.",
+                nameof(categoryId));
+
+        if (paymentMethod == PaymentMethod.CreditCard)
+        {
+            if (!cardId.HasValue)
+                throw new ArgumentException(
+                    "CardId is required for credit card transactions.",
+                    nameof(cardId));
+
+            if (accountId.HasValue)
+                throw new ArgumentException(
+                    "AccountId cannot be used directly for credit card transactions.",
+                    nameof(accountId));
+        }
+        else
+        {
+            if (!accountId.HasValue)
+                throw new ArgumentException(
+                    "AccountId is required for this payment method.",
+                    nameof(accountId));
+
+            if (cardId.HasValue)
+                throw new ArgumentException(
+                    "CardId can only be used for credit card transactions.",
+                    nameof(cardId));
+        }
+
+        Amount = amount;
+        PaymentMethod = paymentMethod;
+        Description = description.Trim();
+        Date = date;
+        AccountId = accountId;
+        CardId = cardId;
+        CategoryId = categoryId;
+
+        UpdatedAt = DateTimeOffset.UtcNow;
+    }
 }

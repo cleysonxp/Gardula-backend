@@ -20,10 +20,19 @@ public interface ITransactionRepository
         int userId,
         CancellationToken cancellationToken = default);
 
+    Task UpdateAsync(
+        Transaction transaction,
+        CancellationToken cancellationToken = default);
+
     Task AddAsync(
         Transaction transaction,
         CancellationToken cancellationToken = default);
 
     Task SaveChangesAsync(
+        CancellationToken cancellationToken = default);
+
+    Task<TransactionDetailResponse?> GetDetailByIdAsync(
+        int id,
+        int userId,
         CancellationToken cancellationToken = default);
 }

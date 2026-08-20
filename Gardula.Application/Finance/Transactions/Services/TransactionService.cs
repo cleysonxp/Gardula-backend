@@ -399,4 +399,173 @@ public class TransactionService
             filter,
             cancellationToken);
     }
+
+    public async Task<TransactionDetailResponse?> GetDetailByIdAsync(
+        int id,
+        CancellationToken cancellationToken = default)
+    {
+        var userId = _currentUserService.UserId;
+
+        return await _transactionRepository.GetDetailByIdAsync(
+            id,
+            userId,
+            cancellationToken);
+    }
+
+    public async Task<TransactionResponse> UpdateAsync(
+        int id,
+        UpdateTransactionRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        var userId = _currentUserService.UserId;
+
+        var transaction = await _transactionRepository.GetByIdAsync(
+            id,
+            userId,
+            cancellationToken);
+
+        if (transaction is null)
+        {
+            throw new KeyNotFoundException(
+                "Transaction not found.");
+        }
+
+        if (transaction.TransferId.HasValue)
+        {
+            throw new ArgumentException(
+                "Transfer transactions must be edited through the transfer flow.");
+        }
+
+        if (transaction.InstallmentGroupId.HasValue)
+        {
+            throw new ArgumentException(
+                "Installment transactions must be edited through the installment flow.");
+        }
+
+        var category = await _categoryRepository.GetByIdAsync(
+            request.CategoryId,
+            userId,
+            cancellationToken);
+
+        if (category is null)
+        {
+            throw new ArgumentException(
+                "Category not found.",
+                nameof(request.CategoryId));
+        }
+
+        if (category.Type == CategoryType.Income &&
+            transaction.Type != TransactionType.Income)
+        {
+            throw new ArgumentException(
+                "Income category cannot be used for an expense.",
+                nameof(request.CategoryId));
+        }
+
+        if (category.Type == CategoryType.Expense &&
+            transaction.Type != TransactionType.Expense)
+        {
+            throw new ArgumentException(
+                "Expense category cannot be used for an income.",
+                nameof(request.CategoryId));
+        }
+
+        var paymentMethod = (PaymentMethod)request.PaymentMethod;
+
+        if (!Enum.IsDefined(paymentMethod))
+        {
+            throw new ArgumentException(
+                "Invalid payment method.",
+                nameof(request.PaymentMethod));
+        }
+
+        if (paymentMethod == PaymentMethod.CreditCard)
+        {
+            if (!request.CardId.HasValue)
+            {
+                throw new ArgumentException(
+                    "CardId is required for credit card transactions.",
+                    nameof(request.CardId));
+            }
+
+            if (request.AccountId.HasValue)
+            {
+                throw new ArgumentException(
+                    "AccountId cannot be used with credit card transactions.",
+                    nameof(request.AccountId));
+            }
+
+            var card = await _cardRepository.GetByIdAsync(
+                request.CardId.Value,
+                userId,
+                cancellationToken);
+
+            if (card is null)
+            {
+                throw new ArgumentException(
+                    "Card not found.",
+                    nameof(request.CardId));
+            }
+
+            if (!card.IsActive)
+            {
+                throw new ArgumentException(
+                    "Card is inactive.",
+                    nameof(request.CardId));
+            }
+        }
+        else
+        {
+            if (!request.AccountId.HasValue)
+            {
+                throw new ArgumentException(
+                    "AccountId is required for this payment method.",
+                    nameof(request.AccountId));
+            }
+
+            if (request.CardId.HasValue)
+            {
+                throw new ArgumentException(
+                    "CardId can only be used with credit card transactions.",
+                    nameof(request.CardId));
+            }
+
+            var account = await _accountRepository.GetByIdAsync(
+                request.AccountId.Value,
+                userId,
+                cancellationToken);
+
+            if (account is null)
+            {
+                throw new ArgumentException(
+                    "Account not found.",
+                    nameof(request.AccountId));
+            }
+
+            if (!account.IsActive)
+            {
+                throw new ArgumentException(
+                    "Account is inactive.",
+                    nameof(request.AccountId));
+            }
+        }
+
+        transaction.Update(
+            request.Amount,
+            paymentMethod,
+            request.Description,
+            request.Date,
+            request.AccountId,
+            request.CardId,
+            request.CategoryId);
+
+        await _transactionRepository.UpdateAsync(
+            transaction,
+            cancellationToken);
+
+        await _transactionRepository.SaveChangesAsync(
+            cancellationToken);
+
+        return MapToResponse(transaction);
+    }
 }
