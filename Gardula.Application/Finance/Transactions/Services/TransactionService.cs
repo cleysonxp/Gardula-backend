@@ -131,7 +131,7 @@ public class TransactionService
             if (request.CardId.HasValue)
             {
                 throw new ArgumentException(
-                    "CardId can only be used with credit card transactions.",
+                    "CardId can only be used for credit card transactions.",
                     nameof(request.CardId));
             }
 
@@ -283,7 +283,8 @@ public class TransactionService
         return MapToResponse(transactionNormal);
     }
 
-    public async Task<List<TransactionResponse>> GetAllAsync(
+    public async Task<List<TransactionListResponse>> GetAllAsync(
+        TransactionFilterRequest filter,
         CancellationToken cancellationToken = default)
     {
         var userId = _currentUserService.UserId;
@@ -291,10 +292,11 @@ public class TransactionService
         var transactions =
             await _transactionRepository.GetAllByUserIdAsync(
                 userId,
+                filter,
                 cancellationToken);
 
         return transactions
-            .Select(MapToResponse)
+            .Select(MapToListResponse)
             .ToList();
     }
 
@@ -335,5 +337,66 @@ public class TransactionService
             transaction.TotalInstallments,
             transaction.CreatedAt,
             transaction.UpdatedAt);
+    }
+
+    private static TransactionListResponse MapToListResponse(
+        TransactionListItem item)
+    {
+        var transaction = item.Transaction;
+
+        return new TransactionListResponse(
+            transaction.Id,
+            transaction.Description,
+            transaction.Amount,
+            transaction.Date,
+            (int)transaction.Type,
+            transaction.Type.ToString(),
+            (int)transaction.PaymentMethod,
+            transaction.PaymentMethod.ToString(),
+
+            item.CategoryName is not null
+                ? new CategorySummaryResponse(
+                    transaction.CategoryId!.Value,
+                    item.CategoryName)
+                : null,
+
+            item.AccountName is not null
+                ? new AccountSummaryResponse(
+                    transaction.AccountId!.Value,
+                    item.AccountName)
+                : null,
+
+            item.CardName is not null
+                ? new CardSummaryResponse(
+                    transaction.CardId!.Value,
+                    item.CardName,
+                    item.CardLastFourDigits!)
+                : null,
+
+            transaction.InstallmentGroupId.HasValue
+                ? new InstallmentSummaryResponse(
+                    transaction.InstallmentGroupId.Value,
+                    transaction.InstallmentNumber!.Value,
+                    transaction.TotalInstallments!.Value)
+                : null,
+
+            item.Transfer is not null
+                ? new TransferSummaryResponse(
+                    item.Transfer.Id,
+                    item.Transfer.SourceAccountId,
+                    item.Transfer.DestinationAccountId)
+                : null);
+    }
+
+    public async Task<TransactionSummaryResponse> GetSummaryAsync(
+        TransactionFilterRequest filter,
+        CancellationToken cancellationToken = default)
+    {
+        var userId = _currentUserService.UserId;
+
+        return await _transactionRepository.GetSummaryAsync(
+            userId,
+            filter,
+            cancellationToken);
     }
 }

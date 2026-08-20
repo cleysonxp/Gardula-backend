@@ -38,13 +38,15 @@ public class TransactionsController : ControllerBase
 
     [HttpGet]
     [ProducesResponseType(
-        typeof(List<TransactionResponse>),
+        typeof(List<TransactionListResponse>),
         StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    public async Task<ActionResult<List<TransactionResponse>>> GetAll(
-        CancellationToken cancellationToken)
+    public async Task<ActionResult<List<TransactionListResponse>>> GetAll(
+    [FromQuery] TransactionFilterRequest filter,
+    CancellationToken cancellationToken)
     {
         var response = await _transactionService.GetAllAsync(
+            filter,
             cancellationToken);
 
         return Ok(response);
@@ -66,6 +68,22 @@ public class TransactionsController : ControllerBase
 
         if (response is null)
             return NotFound();
+
+        return Ok(response);
+    }
+
+    [HttpGet("summary")]
+    [ProducesResponseType(
+        typeof(TransactionSummaryResponse),
+        StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<ActionResult<TransactionSummaryResponse>> GetSummary(
+    [FromQuery] TransactionFilterRequest filter,
+    CancellationToken cancellationToken)
+    {
+        var response = await _transactionService.GetSummaryAsync(
+            filter,
+            cancellationToken);
 
         return Ok(response);
     }

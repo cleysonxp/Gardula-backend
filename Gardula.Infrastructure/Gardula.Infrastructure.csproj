@@ -23,4 +23,8 @@
     <ProjectReference Include="..\Gardula.Domain\Gardula.Domain.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Finance\Queries\" />
+  </ItemGroup>
+
 </Project>

@@ -1,11 +1,18 @@
-﻿using Gardula.Domain.Entities.Finance;
+﻿using Gardula.Application.Finance.Transactions.DTOs;
+using Gardula.Domain.Entities.Finance;
 
 namespace Gardula.Application.Finance.Transactions.Services;
 
 public interface ITransactionRepository
 {
-    Task<List<Transaction>> GetAllByUserIdAsync(
+    Task<List<TransactionListItem>> GetAllByUserIdAsync(
         int userId,
+        TransactionFilterRequest filter,
+        CancellationToken cancellationToken = default);
+
+    Task<TransactionSummaryResponse> GetSummaryAsync(
+        int userId,
+        TransactionFilterRequest filter,
         CancellationToken cancellationToken = default);
 
     Task<Transaction?> GetByIdAsync(
