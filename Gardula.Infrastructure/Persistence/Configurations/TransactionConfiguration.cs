@@ -20,7 +20,10 @@ public class TransactionConfiguration : IEntityTypeConfiguration<Transaction>
             .IsRequired();
 
         builder.Property(transaction => transaction.AccountId)
-            .IsRequired();
+            .IsRequired(false);
+
+        builder.Property(transaction => transaction.CardId)
+            .IsRequired(false);
 
         builder.Property(transaction => transaction.CategoryId)
             .IsRequired(false);
@@ -35,12 +38,24 @@ public class TransactionConfiguration : IEntityTypeConfiguration<Transaction>
         builder.Property(transaction => transaction.Type)
             .IsRequired();
 
+        builder.Property(transaction => transaction.PaymentMethod)
+            .IsRequired();
+
         builder.Property(transaction => transaction.Description)
             .IsRequired()
             .HasMaxLength(255);
 
         builder.Property(transaction => transaction.Date)
             .IsRequired();
+
+        builder.Property(transaction => transaction.InstallmentGroupId)
+            .IsRequired(false);
+
+        builder.Property(transaction => transaction.InstallmentNumber)
+            .IsRequired(false);
+
+        builder.Property(transaction => transaction.TotalInstallments)
+            .IsRequired(false);
 
         builder.Property(transaction => transaction.CreatedAt)
             .IsRequired();
@@ -56,6 +71,11 @@ public class TransactionConfiguration : IEntityTypeConfiguration<Transaction>
         builder.HasOne<Account>()
             .WithMany()
             .HasForeignKey(transaction => transaction.AccountId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        builder.HasOne<Card>()
+            .WithMany()
+            .HasForeignKey(transaction => transaction.CardId)
             .OnDelete(DeleteBehavior.Restrict);
 
         builder.HasOne<Category>()

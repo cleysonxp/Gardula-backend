@@ -1,6 +1,9 @@
 ﻿using Gardula.Application.Authentication.Services;
 using Gardula.Application.Finance.Accounts.Services;
 using Gardula.Application.Finance.Cards.Services;
+using Gardula.Application.Finance.Categories.Services;
+using Gardula.Application.Finance.Transactions.Services;
+using Gardula.Application.Finance.Transfers.Services;
 using Gardula.Infrastructure.Authentication.Configuration;
 using Gardula.Infrastructure.Authentication.Repositories;
 using Gardula.Infrastructure.Authentication.Services;
@@ -57,6 +60,9 @@ public static class DependencyInjection
 
         services.AddScoped<IAccountRepository, AccountRepository>();
         services.AddScoped<ICardRepository, CardRepository>();
+        services.AddScoped<ICategoryRepository, CategoryRepository>();
+        services.AddScoped<ITransactionRepository, TransactionRepository>();
+        services.AddScoped<ITransferRepository, TransferRepository>();
 
         services.AddScoped<ITokenService, JwtTokenService>();
 

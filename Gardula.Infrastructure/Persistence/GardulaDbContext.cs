@@ -1,5 +1,6 @@
 ﻿using Gardula.Domain.Entities.Authentication;
 using Gardula.Domain.Entities.Finance;
+using Gardula.Infrastructure.Persistence.Seeds;
 using Microsoft.EntityFrameworkCore;
 
 namespace Gardula.Infrastructure.Persistence;
@@ -31,6 +32,9 @@ public class GardulaDbContext : DbContext
     {
         base.OnModelCreating(modelBuilder);
 
-        modelBuilder.ApplyConfigurationsFromAssembly(typeof(GardulaDbContext).Assembly);
+        modelBuilder.ApplyConfigurationsFromAssembly(
+            typeof(GardulaDbContext).Assembly);
+
+        CategorySeed.Seed(modelBuilder);
     }
 }

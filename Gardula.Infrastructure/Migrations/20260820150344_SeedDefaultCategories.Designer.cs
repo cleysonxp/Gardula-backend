@@ -4,6 +4,7 @@ using Gardula.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Gardula.Infrastructure.Migrations
 {
     [DbContext(typeof(GardulaDbContext))]
-    partial class GardulaDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260820150344_SeedDefaultCategories")]
+    partial class SeedDefaultCategories
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -1228,15 +1231,12 @@ namespace Gardula.Infrastructure.Migrations
 
                     MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
 
-                    b.Property<int?>("AccountId")
+                    b.Property<int>("AccountId")
                         .HasColumnType("int");
 
                     b.Property<decimal>("Amount")
                         .HasPrecision(18, 2)
                         .HasColumnType("decimal(18,2)");
-
-                    b.Property<int?>("CardId")
-                        .HasColumnType("int");
 
                     b.Property<int?>("CategoryId")
                         .HasColumnType("int");
@@ -1251,18 +1251,6 @@ namespace Gardula.Infrastructure.Migrations
                         .IsRequired()
                         .HasMaxLength(255)
                         .HasColumnType("varchar(255)");
-
-                    b.Property<Guid?>("InstallmentGroupId")
-                        .HasColumnType("char(36)");
-
-                    b.Property<int?>("InstallmentNumber")
-                        .HasColumnType("int");
-
-                    b.Property<int>("PaymentMethod")
-                        .HasColumnType("int");
-
-                    b.Property<int?>("TotalInstallments")
-                        .HasColumnType("int");
 
                     b.Property<int?>("TransferId")
                         .HasColumnType("int");
@@ -1279,8 +1267,6 @@ namespace Gardula.Infrastructure.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("AccountId");
-
-                    b.HasIndex("CardId");
 
                     b.HasIndex("CategoryId");
 
@@ -1386,12 +1372,8 @@ namespace Gardula.Infrastructure.Migrations
                     b.HasOne("Gardula.Domain.Entities.Finance.Account", null)
                         .WithMany()
                         .HasForeignKey("AccountId")
-                        .OnDelete(DeleteBehavior.Restrict);
-
-                    b.HasOne("Gardula.Domain.Entities.Finance.Card", null)
-                        .WithMany()
-                        .HasForeignKey("CardId")
-                        .OnDelete(DeleteBehavior.Restrict);
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
 
                     b.HasOne("Gardula.Domain.Entities.Finance.Category", null)
                         .WithMany()
