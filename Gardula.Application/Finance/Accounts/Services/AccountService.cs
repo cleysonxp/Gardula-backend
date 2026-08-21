@@ -1,6 +1,8 @@
 ﻿using Gardula.Application.Common.Services;
 using Gardula.Application.Finance.Accounts.DTOs;
 using Gardula.Domain.Entities.Finance;
+using Gardula.Application.Finance.Transactions.DTOs;
+using Gardula.Application.Finance.Transactions.Services;
 
 namespace Gardula.Application.Finance.Accounts.Services;
 
@@ -8,13 +10,16 @@ public class AccountService
 {
     private readonly IAccountRepository _accountRepository;
     private readonly ICurrentUserService _currentUserService;
+    private readonly TransactionService _transactionService;
 
     public AccountService(
         IAccountRepository accountRepository,
-        ICurrentUserService currentUserService)
+        ICurrentUserService currentUserService,
+        TransactionService transactionService)
     {
         _accountRepository = accountRepository;
         _currentUserService = currentUserService;
+        _transactionService = transactionService;
     }
 
     public async Task<AccountResponse> CreateAsync(
@@ -145,6 +150,91 @@ public class AccountService
             cancellationToken);
 
         return true;
+    }
+
+    public async Task<AccountOverviewResponse> GetOverviewAsync(
+        AccountOverviewFilterRequest filter,
+        CancellationToken cancellationToken = default)
+    {
+        var userId = _currentUserService.UserId;
+
+        var startDate = filter.StartDate
+            ?? new DateTimeOffset(
+                DateTimeOffset.UtcNow.Year,
+                DateTimeOffset.UtcNow.Month,
+                1,
+                0,
+                0,
+                0,
+                TimeSpan.Zero);
+
+        var endDate = filter.EndDate
+            ?? startDate.AddMonths(1).AddTicks(-1);
+
+        var accounts = await _accountRepository.GetAllByUserIdAsync(
+            userId,
+            cancellationToken);
+
+        var balances = await _accountRepository.GetBalancesByUserIdAsync(
+            userId,
+            cancellationToken);
+
+        var periodSummaries =
+            await _accountRepository.GetPeriodSummaryByUserIdAsync(
+                userId,
+                startDate,
+                endDate,
+                cancellationToken);
+
+        var recentTransactions =
+            await _transactionService.GetAllAsync(
+                new TransactionFilterRequest(
+                    StartDate: startDate,
+                    EndDate: endDate,
+                    Page: 1,
+                    PageSize: 5),
+                cancellationToken);
+
+        var balanceByAccountId = balances
+            .ToDictionary(
+                item => item.AccountId,
+                item => item.CurrentBalance);
+
+        var summaryByAccountId = periodSummaries
+            .ToDictionary(
+                item => item.AccountId,
+                item => item);
+
+        var accountItems = accounts
+            .Select(account =>
+            {
+                balanceByAccountId.TryGetValue(
+                    account.Id,
+                    out var currentBalance);
+
+                summaryByAccountId.TryGetValue(
+                    account.Id,
+                    out var summary);
+
+                return new AccountOverviewItem(
+                    account.Id,
+                    account.Name,
+                    (int)account.Type,
+                    account.Color,
+                    account.IsActive,
+                    currentBalance,
+                    summary?.Income ?? 0m,
+                    summary?.Expense ?? 0m);
+            })
+            .ToList();
+
+        return new AccountOverviewResponse(
+            accountItems.Sum(account => account.CurrentBalance),
+            accounts.Count,
+            accountItems.Sum(account => account.Income),
+            accountItems.Sum(account => account.Expense),
+            accountItems,
+            recentTransactions.Items);
     }
 
 }

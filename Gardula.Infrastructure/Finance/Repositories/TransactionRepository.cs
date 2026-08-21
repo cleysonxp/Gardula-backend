@@ -1,4 +1,5 @@
 ﻿using Gardula.Application.Finance.Transactions.DTOs;
+using Gardula.Application.Common.DTOs;
 using Gardula.Application.Finance.Transactions.Services;
 using Gardula.Domain.Entities.Finance;
 using Gardula.Infrastructure.Persistence;
@@ -15,7 +16,7 @@ public class TransactionRepository : ITransactionRepository
         _context = context;
     }
 
-    public async Task<List<TransactionListItem>> GetAllByUserIdAsync(
+    public async Task<PagedResponse<TransactionListItem>> GetAllByUserIdAsync(
         int userId,
         TransactionFilterRequest filter,
         CancellationToken cancellationToken = default)
@@ -134,7 +135,25 @@ public class TransactionRepository : ITransactionRepository
                     : null
             };
 
-        return await query.ToListAsync(cancellationToken);
+        var totalItems = await query.CountAsync(cancellationToken);
+
+        var totalPages = totalItems == 0
+            ? 0
+            : (int)Math.Ceiling(
+                totalItems / (double)filter.PageSize);
+
+        var items = await query
+            .Skip((filter.Page - 1) * filter.PageSize)
+            .Take(filter.PageSize)
+            .ToListAsync(cancellationToken);
+
+        return new PagedResponse<TransactionListItem>(
+            items,
+            filter.Page,
+            filter.PageSize,
+            totalItems,
+            totalPages,
+            filter.Page < totalPages);
     }
 
     public async Task<TransactionSummaryResponse> GetSummaryAsync(

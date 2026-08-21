@@ -9,4 +9,6 @@ public record TransactionFilterRequest(
     int? AccountId = null,
     int? CardId = null,
     TransactionType? Type = null,
-    string? Search = null);
+    string? Search = null,
+    int Page = 1,
+    int PageSize = 20);

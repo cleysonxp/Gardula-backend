@@ -1,4 +1,5 @@
-﻿using Gardula.Application.Common.Services;
+﻿using Gardula.Application.Common.DTOs;
+using Gardula.Application.Common.Services;
 using Gardula.Application.Finance.Accounts.Services;
 using Gardula.Application.Finance.Cards.Services;
 using Gardula.Application.Finance.Categories.Services;
@@ -283,7 +284,7 @@ public class TransactionService
         return MapToResponse(transactionNormal);
     }
 
-    public async Task<List<TransactionListResponse>> GetAllAsync(
+    public async Task<PagedResponse<TransactionListResponse>> GetAllAsync(
         TransactionFilterRequest filter,
         CancellationToken cancellationToken = default)
     {
@@ -295,9 +296,17 @@ public class TransactionService
                 filter,
                 cancellationToken);
 
-        return transactions
+        var items = transactions.Items
             .Select(MapToListResponse)
             .ToList();
+
+        return new PagedResponse<TransactionListResponse>(
+            items,
+            transactions.Page,
+            transactions.PageSize,
+            transactions.TotalItems,
+            transactions.TotalPages,
+            transactions.HasNextPage);
     }
 
     public async Task<TransactionResponse?> GetByIdAsync(

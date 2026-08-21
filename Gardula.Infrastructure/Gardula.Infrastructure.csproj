@@ -25,6 +25,7 @@
 
   <ItemGroup>
     <Folder Include="Finance\Queries\" />
+    <Folder Include="Persistence\Repositories\" />
   </ItemGroup>
 
 </Project>

@@ -1,4 +1,5 @@
-﻿using Gardula.Application.Finance.Transactions.DTOs;
+﻿using Gardula.Application.Common.DTOs;
+using Gardula.Application.Finance.Transactions.DTOs;
 using Gardula.Application.Finance.Transactions.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -38,10 +39,10 @@ public class TransactionsController : ControllerBase
 
     [HttpGet]
     [ProducesResponseType(
-        typeof(List<TransactionListResponse>),
+        typeof(PagedResponse<TransactionListResponse>),
         StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    public async Task<ActionResult<List<TransactionListResponse>>> GetAll(
+    public async Task<ActionResult<PagedResponse<TransactionListResponse>>> GetAll(
         [FromQuery] TransactionFilterRequest filter,
         CancellationToken cancellationToken)
     {

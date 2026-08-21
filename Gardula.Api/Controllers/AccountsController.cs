@@ -38,13 +38,29 @@ public class AccountsController : ControllerBase
 
     [HttpGet]
     [ProducesResponseType(
-    typeof(List<AccountResponse>),
-    StatusCodes.Status200OK)]
+        typeof(List<AccountResponse>),
+        StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<ActionResult<List<AccountResponse>>> GetAll(
-    CancellationToken cancellationToken)
+        CancellationToken cancellationToken)
     {
         var response = await _accountService.GetAllAsync(
+            cancellationToken);
+
+        return Ok(response);
+    }
+
+    [HttpGet("overview")]
+    [ProducesResponseType(
+    typeof(AccountOverviewResponse),
+    StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<ActionResult<AccountOverviewResponse>> GetOverview(
+        [FromQuery] AccountOverviewFilterRequest filter,
+        CancellationToken cancellationToken)
+    {
+        var response = await _accountService.GetOverviewAsync(
+            filter,
             cancellationToken);
 
         return Ok(response);
@@ -72,15 +88,15 @@ public class AccountsController : ControllerBase
 
     [HttpPut("{id:int}")]
     [ProducesResponseType(
-    typeof(AccountResponse),
-    StatusCodes.Status200OK)]
+        typeof(AccountResponse),
+        StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<AccountResponse>> Update(
-    int id,
-    UpdateAccountRequest request,
-    CancellationToken cancellationToken)
+        int id,
+        UpdateAccountRequest request,
+        CancellationToken cancellationToken)
     {
         var response = await _accountService.UpdateAsync(
             id,
@@ -98,8 +114,8 @@ public class AccountsController : ControllerBase
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Delete(
-    int id,
-    CancellationToken cancellationToken)
+        int id,
+        CancellationToken cancellationToken)
     {
         var deleted = await _accountService.DeleteAsync(
             id,

@@ -1,4 +1,5 @@
-﻿using Gardula.Domain.Entities.Finance;
+﻿using Gardula.Application.Finance.Accounts.DTOs;
+using Gardula.Domain.Entities.Finance;
 
 namespace Gardula.Application.Finance.Accounts.Services;
 
@@ -18,5 +19,15 @@ public interface IAccountRepository
         CancellationToken cancellationToken = default);
 
     Task SaveChangesAsync(
+        CancellationToken cancellationToken = default);
+
+    Task<List<AccountBalanceItem>> GetBalancesByUserIdAsync(
+        int userId,
+        CancellationToken cancellationToken = default);
+
+    Task<List<AccountPeriodSummaryItem>> GetPeriodSummaryByUserIdAsync(
+        int userId,
+        DateTimeOffset startDate,
+        DateTimeOffset endDate,
         CancellationToken cancellationToken = default);
 }
