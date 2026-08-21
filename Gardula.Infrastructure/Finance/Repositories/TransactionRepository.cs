@@ -365,4 +365,98 @@ public class TransactionRepository : ITransactionRepository
 
         return Task.CompletedTask;
     }
+
+    public Task DeleteAsync(
+        Transaction transaction,
+        CancellationToken cancellationToken = default)
+    {
+        _context.Transactions.Remove(transaction);
+
+        return Task.CompletedTask;
+    }
+
+    public async Task DeleteInstallmentGroupAsync(
+        Guid installmentGroupId,
+        int userId,
+        CancellationToken cancellationToken = default)
+    {
+        var transactions = await _context.Transactions
+            .Where(transaction =>
+                transaction.UserId == userId &&
+                transaction.InstallmentGroupId == installmentGroupId)
+            .ToListAsync(cancellationToken);
+
+        if (transactions.Count == 0)
+        {
+            throw new KeyNotFoundException(
+                "Installment group not found.");
+        }
+
+        _context.Transactions.RemoveRange(transactions);
+    }
+
+    public async Task<List<Transaction>> GetAllByInstallmentGroupIdAsync(
+        Guid installmentGroupId,
+        int userId,
+        CancellationToken cancellationToken = default)
+    {
+        return await _context.Transactions
+            .Where(transaction =>
+                transaction.UserId == userId &&
+                transaction.InstallmentGroupId == installmentGroupId)
+            .ToListAsync(cancellationToken);
+    }
+
+    public async Task<Transaction?> GetInstallmentByIdAsync(
+        int id,
+        int userId,
+        CancellationToken cancellationToken = default)
+    {
+        return await _context.Transactions
+            .FirstOrDefaultAsync(
+                transaction =>
+                    transaction.Id == id &&
+                    transaction.UserId == userId &&
+                    transaction.InstallmentGroupId.HasValue,
+                cancellationToken);
+    }
+
+    public async Task<List<Transaction>> GetInstallmentsByGroupIdAsync(
+        Guid installmentGroupId,
+        int userId,
+        CancellationToken cancellationToken = default)
+    {
+        return await _context.Transactions
+            .Where(transaction =>
+                transaction.UserId == userId &&
+                transaction.InstallmentGroupId == installmentGroupId)
+            .OrderBy(transaction => transaction.InstallmentNumber)
+            .ToListAsync(cancellationToken);
+    }
+
+    public async Task<List<Transaction>> GetByTransferIdAsync(
+        int transferId,
+        int userId,
+        CancellationToken cancellationToken = default)
+    {
+        return await _context.Transactions
+            .Where(transaction =>
+                transaction.TransferId == transferId &&
+                transaction.UserId == userId)
+            .ToListAsync(cancellationToken);
+    }
+
+    public async Task DeleteByTransferIdAsync(
+        int transferId,
+        int userId,
+        CancellationToken cancellationToken = default)
+    {
+        var transactions = await _context.Transactions
+            .Where(transaction =>
+                transaction.TransferId == transferId &&
+                transaction.UserId == userId)
+            .ToListAsync(cancellationToken);
+
+        _context.Transactions.RemoveRange(transactions);
+    }
 }

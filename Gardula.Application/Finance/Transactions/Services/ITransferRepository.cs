@@ -15,4 +15,8 @@ public interface ITransferRepository
 
     Task SaveChangesAsync(
         CancellationToken cancellationToken = default);
+
+    Task DeleteAsync(
+        Transfer transfer,
+        CancellationToken cancellationToken = default);
 }

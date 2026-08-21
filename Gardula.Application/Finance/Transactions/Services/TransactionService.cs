@@ -568,4 +568,159 @@ public class TransactionService
 
         return MapToResponse(transaction);
     }
+
+    public async Task DeleteAsync(
+        int id,
+        CancellationToken cancellationToken = default)
+    {
+        var userId = _currentUserService.UserId;
+
+        var transaction = await _transactionRepository.GetByIdAsync(
+            id,
+            userId,
+            cancellationToken);
+
+        if (transaction is null)
+        {
+            throw new KeyNotFoundException(
+                "Transaction not found.");
+        }
+
+        if (transaction.TransferId.HasValue)
+        {
+            throw new ArgumentException(
+                "Transfer transactions must be deleted through the transfer flow.");
+        }
+
+        if (transaction.InstallmentGroupId.HasValue)
+        {
+            throw new ArgumentException(
+                "Installment transactions must be deleted through the installment flow.");
+        }
+
+        await _transactionRepository.DeleteAsync(
+            transaction,
+            cancellationToken);
+
+        await _transactionRepository.SaveChangesAsync(
+            cancellationToken);
+    }
+
+    public async Task DeleteInstallmentGroupAsync(
+        Guid installmentGroupId,
+        CancellationToken cancellationToken = default)
+    {
+        var userId = _currentUserService.UserId;
+
+        await _transactionRepository.DeleteInstallmentGroupAsync(
+            installmentGroupId,
+            userId,
+            cancellationToken);
+
+        await _transactionRepository.SaveChangesAsync(
+            cancellationToken);
+    }
+
+    public async Task<TransactionResponse> UpdateInstallmentAsync(
+        int id,
+        UpdateInstallmentRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        var userId = _currentUserService.UserId;
+
+        var transaction = await _transactionRepository
+            .GetInstallmentByIdAsync(
+                id,
+                userId,
+                cancellationToken);
+
+        if (transaction is null)
+        {
+            throw new KeyNotFoundException(
+                "Installment transaction not found.");
+        }
+
+        var installmentGroupId = transaction.InstallmentGroupId!.Value;
+
+        var installments = await _transactionRepository
+            .GetInstallmentsByGroupIdAsync(
+                installmentGroupId,
+                userId,
+                cancellationToken);
+
+        if (installments.Count == 0)
+        {
+            throw new KeyNotFoundException(
+                "Installment group not found.");
+        }
+
+        var category = await _categoryRepository.GetByIdAsync(
+            request.CategoryId,
+            userId,
+            cancellationToken);
+
+        if (category is null)
+        {
+            throw new ArgumentException(
+                "Category not found.",
+                nameof(request.CategoryId));
+        }
+
+        if (category.Type != CategoryType.Expense)
+        {
+            throw new ArgumentException(
+                "Installment transactions must use an expense category.",
+                nameof(request.CategoryId));
+        }
+
+        if (request.Amount <= 0)
+        {
+            throw new ArgumentException(
+                "Amount must be greater than zero.",
+                nameof(request.Amount));
+        }
+
+        if (string.IsNullOrWhiteSpace(request.Description))
+        {
+            throw new ArgumentException(
+                "Description is required.",
+                nameof(request.Description));
+        }
+
+        var totalInstallments = installments.Count;
+
+        var installmentAmount = Math.Round(
+            request.Amount / totalInstallments,
+            2,
+            MidpointRounding.AwayFromZero);
+
+        foreach (var installment in installments)
+        {
+            var installmentNumber = installment.InstallmentNumber!.Value;
+
+            var amount = installmentNumber == totalInstallments
+                ? request.Amount -
+                  (installmentAmount * (totalInstallments - 1))
+                : installmentAmount;
+
+            var date = request.Date.AddMonths(
+                installmentNumber - 1);
+
+            installment.Update(
+                amount,
+                installment.PaymentMethod,
+                request.Description.Trim(),
+                date,
+                installment.AccountId,
+                installment.CardId,
+                request.CategoryId);
+        }
+
+        await _transactionRepository.SaveChangesAsync(
+            cancellationToken);
+
+        return MapToResponse(
+            installments.First(x => x.Id == id));
+    }
+
 }

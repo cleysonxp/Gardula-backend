@@ -52,4 +52,34 @@ public class Transfer
 
         CreatedAt = DateTimeOffset.UtcNow;
     }
+
+    public void Update(
+        int sourceAccountId,
+        int destinationAccountId,
+        decimal amount)
+    {
+        if (sourceAccountId <= 0)
+            throw new ArgumentException(
+                "SourceAccountId must be greater than zero.",
+                nameof(sourceAccountId));
+
+        if (destinationAccountId <= 0)
+            throw new ArgumentException(
+                "DestinationAccountId must be greater than zero.",
+                nameof(destinationAccountId));
+
+        if (sourceAccountId == destinationAccountId)
+            throw new ArgumentException(
+                "Source and destination accounts must be different.",
+                nameof(destinationAccountId));
+
+        if (amount <= 0)
+            throw new ArgumentException(
+                "Transfer amount must be greater than zero.",
+                nameof(amount));
+
+        SourceAccountId = sourceAccountId;
+        DestinationAccountId = destinationAccountId;
+        Amount = amount;
+    }
 }

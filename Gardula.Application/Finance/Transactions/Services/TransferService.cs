@@ -156,4 +156,148 @@ public class TransferService
             transfer.Amount,
             transfer.CreatedAt);
     }
+
+    public async Task<TransferResponse> UpdateAsync(
+        int id,
+        UpdateTransferRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        var userId = _currentUserService.UserId;
+
+        var transfer = await _transferRepository.GetByIdAsync(
+            id,
+            userId,
+            cancellationToken);
+
+        if (transfer is null)
+        {
+            throw new KeyNotFoundException(
+                "Transfer not found.");
+        }
+
+        var sourceAccount = await _accountRepository.GetByIdAsync(
+            request.SourceAccountId,
+            userId,
+            cancellationToken);
+
+        if (sourceAccount is null)
+        {
+            throw new ArgumentException(
+                "Source account not found.",
+                nameof(request.SourceAccountId));
+        }
+
+        if (!sourceAccount.IsActive)
+        {
+            throw new ArgumentException(
+                "Source account is inactive.",
+                nameof(request.SourceAccountId));
+        }
+
+        var destinationAccount = await _accountRepository.GetByIdAsync(
+            request.DestinationAccountId,
+            userId,
+            cancellationToken);
+
+        if (destinationAccount is null)
+        {
+            throw new ArgumentException(
+                "Destination account not found.",
+                nameof(request.DestinationAccountId));
+        }
+
+        if (!destinationAccount.IsActive)
+        {
+            throw new ArgumentException(
+                "Destination account is inactive.",
+                nameof(request.DestinationAccountId));
+        }
+
+        if (request.SourceAccountId == request.DestinationAccountId)
+        {
+            throw new ArgumentException(
+                "Source and destination accounts must be different.",
+                nameof(request.DestinationAccountId));
+        }
+
+        if (request.Amount <= 0)
+        {
+            throw new ArgumentException(
+                "Transfer amount must be greater than zero.",
+                nameof(request.Amount));
+        }
+
+        var transactions = await _transactionRepository
+            .GetByTransferIdAsync(
+                transfer.Id,
+                userId,
+                cancellationToken);
+
+        if (transactions.Count != 2)
+        {
+            throw new InvalidOperationException(
+                "Transfer must have exactly two transactions.");
+        }
+
+        transfer.Update(
+            request.SourceAccountId,
+            request.DestinationAccountId,
+            request.Amount);
+
+        var sourceTransaction = transactions
+            .First(transaction =>
+                transaction.AccountId == transfer.SourceAccountId);
+
+        var destinationTransaction = transactions
+            .First(transaction =>
+                transaction.AccountId == transfer.DestinationAccountId);
+
+        sourceTransaction.UpdateTransfer(
+            request.Amount,
+            request.SourceAccountId);
+
+        destinationTransaction.UpdateTransfer(
+            request.Amount,
+            request.DestinationAccountId);
+
+        await _transferRepository.SaveChangesAsync(
+            cancellationToken);
+
+        return new TransferResponse(
+            transfer.Id,
+            transfer.SourceAccountId,
+            transfer.DestinationAccountId,
+            transfer.Amount,
+            transfer.CreatedAt);
+    }
+
+    public async Task DeleteAsync(
+        int id,
+        CancellationToken cancellationToken = default)
+    {
+        var userId = _currentUserService.UserId;
+
+        var transfer = await _transferRepository.GetByIdAsync(
+            id,
+            userId,
+            cancellationToken);
+
+        if (transfer is null)
+        {
+            throw new KeyNotFoundException(
+                "Transfer not found.");
+        }
+
+        await _transactionRepository.DeleteByTransferIdAsync(
+            transfer.Id,
+            userId,
+            cancellationToken);
+
+        await _transferRepository.DeleteAsync(
+            transfer,
+            cancellationToken);
+
+        await _transferRepository.SaveChangesAsync(
+            cancellationToken);
+    }
 }

@@ -41,4 +41,13 @@ public class TransferRepository : ITransferRepository
     {
         await _context.SaveChangesAsync(cancellationToken);
     }
+
+    public Task DeleteAsync(
+        Transfer transfer,
+        CancellationToken cancellationToken = default)
+    {
+        _context.Transfers.Remove(transfer);
+
+        return Task.CompletedTask;
+    }
 }

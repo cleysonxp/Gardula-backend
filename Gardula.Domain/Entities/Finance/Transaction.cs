@@ -249,4 +249,23 @@ public class Transaction
 
         UpdatedAt = DateTimeOffset.UtcNow;
     }
+
+    public void UpdateTransfer(
+        decimal amount,
+        int accountId)
+    {
+        if (amount <= 0)
+            throw new ArgumentException(
+                "Transfer amount must be greater than zero.",
+                nameof(amount));
+
+        if (accountId <= 0)
+            throw new ArgumentException(
+                "AccountId must be greater than zero.",
+                nameof(accountId));
+
+        Amount = amount;
+        AccountId = accountId;
+        UpdatedAt = DateTimeOffset.UtcNow;
+    }
 }
