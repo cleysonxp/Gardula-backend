@@ -159,7 +159,7 @@ public class TransactionRepository : ITransactionRepository
     public async Task<TransactionSummaryResponse> GetSummaryAsync(
         int userId,
         TransactionFilterRequest filter,
-    CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default)
     {
         var query = _context.Transactions
             .Where(transaction =>

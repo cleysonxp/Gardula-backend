@@ -237,4 +237,59 @@ public class AccountService
             recentTransactions.Items);
     }
 
+    public async Task<AccountDetailOverviewResponse?> GetDetailOverviewAsync(
+        int id,
+        AccountDetailFilterRequest filter,
+        CancellationToken cancellationToken = default)
+    {
+        var userId = _currentUserService.UserId;
+
+        var account = await _accountRepository.GetByIdAsync(
+            id,
+            userId,
+            cancellationToken);
+
+        if (account is null)
+            return null;
+
+        var currentBalance =
+            await _accountRepository.GetBalanceByAccountIdAsync(
+                id,
+                userId,
+                cancellationToken);
+
+        var transactionFilter = new TransactionFilterRequest(
+            StartDate: filter.StartDate,
+            EndDate: filter.EndDate,
+            CategoryId: filter.CategoryId,
+            AccountId: id,
+            Search: filter.Search,
+            Page: filter.Page,
+            PageSize: filter.PageSize);
+
+        var summary = await _transactionService.GetSummaryAsync(
+            transactionFilter,
+            cancellationToken);
+
+        var transactions = await _transactionService.GetAllAsync(
+            transactionFilter,
+            cancellationToken);
+
+        var accountResponse = new AccountResponse(
+            account.Id,
+            account.Name,
+            (int)account.Type,
+            account.InitialBalance,
+            account.Color,
+            account.IsActive,
+            account.CreatedAt,
+            account.UpdatedAt);
+
+        return new AccountDetailOverviewResponse(
+            accountResponse,
+            currentBalance,
+            summary,
+            transactions);
+    }
+
 }

@@ -144,4 +144,66 @@ public class AccountRepository : IAccountRepository
 
         return result;
     }
+
+    public async Task<decimal> GetBalanceByAccountIdAsync(
+        int accountId,
+        int userId,
+        CancellationToken cancellationToken = default)
+    {
+        var balance = await _context.Accounts
+            .Where(account =>
+                account.Id == accountId &&
+                account.UserId == userId)
+            .Select(account =>
+                account.InitialBalance
+
+                + (
+                    _context.Transactions
+                        .Where(transaction =>
+                            transaction.UserId == userId &&
+                            transaction.AccountId == accountId &&
+                            transaction.Type == TransactionType.Income)
+                        .Select(transaction => (decimal?)transaction.Amount)
+                        .Sum() ?? 0m
+                )
+
+                - (
+                    _context.Transactions
+                        .Where(transaction =>
+                            transaction.UserId == userId &&
+                            transaction.AccountId == accountId &&
+                            transaction.Type == TransactionType.Expense)
+                        .Select(transaction => (decimal?)transaction.Amount)
+                        .Sum() ?? 0m
+                )
+
+                - (
+                    _context.Transactions
+                        .Where(transaction =>
+                            transaction.UserId == userId &&
+                            transaction.AccountId == accountId &&
+                            transaction.TransferId.HasValue &&
+                            _context.Transfers.Any(transfer =>
+                                transfer.Id == transaction.TransferId.Value &&
+                                transfer.SourceAccountId == accountId))
+                        .Select(transaction => (decimal?)transaction.Amount)
+                        .Sum() ?? 0m
+                )
+
+                + (
+                    _context.Transactions
+                        .Where(transaction =>
+                            transaction.UserId == userId &&
+                            transaction.AccountId == accountId &&
+                            transaction.TransferId.HasValue &&
+                            _context.Transfers.Any(transfer =>
+                                transfer.Id == transaction.TransferId.Value &&
+                                transfer.DestinationAccountId == accountId))
+                        .Select(transaction => (decimal?)transaction.Amount)
+                        .Sum() ?? 0m
+                ))
+            .FirstOrDefaultAsync(cancellationToken);
+
+        return balance;
+    }
 }

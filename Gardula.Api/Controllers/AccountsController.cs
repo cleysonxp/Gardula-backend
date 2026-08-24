@@ -52,8 +52,8 @@ public class AccountsController : ControllerBase
 
     [HttpGet("overview")]
     [ProducesResponseType(
-    typeof(AccountOverviewResponse),
-    StatusCodes.Status200OK)]
+        typeof(AccountOverviewResponse),
+        StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<ActionResult<AccountOverviewResponse>> GetOverview(
         [FromQuery] AccountOverviewFilterRequest filter,
@@ -66,15 +66,37 @@ public class AccountsController : ControllerBase
         return Ok(response);
     }
 
+    [HttpGet("{id:int}/overview")]
+    [ProducesResponseType(
+        typeof(AccountDetailOverviewResponse),
+        StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<AccountDetailOverviewResponse>> GetDetailOverview(
+        int id,
+        [FromQuery] AccountDetailFilterRequest filter,
+        CancellationToken cancellationToken)
+    {
+        var response = await _accountService.GetDetailOverviewAsync(
+            id,
+            filter,
+            cancellationToken);
+
+        if (response is null)
+            return NotFound();
+
+        return Ok(response);
+    }
+
     [HttpGet("{id:int}")]
     [ProducesResponseType(
-    typeof(AccountResponse),
-    StatusCodes.Status200OK)]
+        typeof(AccountResponse),
+        StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<AccountResponse>> GetById(
-    int id,
-    CancellationToken cancellationToken)
+        int id,
+        CancellationToken cancellationToken)
     {
         var response = await _accountService.GetByIdAsync(
             id,
