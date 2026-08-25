@@ -22,6 +22,9 @@ public class GardulaDbContext : DbContext
 
     public DbSet<Card> Cards => Set<Card>();
 
+    public DbSet<CreditCardInvoice> CreditCardInvoices =>
+        Set<CreditCardInvoice>();
+
     public DbSet<Category> Categories => Set<Category>();
 
     public DbSet<Transaction> Transactions => Set<Transaction>();

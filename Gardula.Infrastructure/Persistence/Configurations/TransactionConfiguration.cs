@@ -25,6 +25,9 @@ public class TransactionConfiguration : IEntityTypeConfiguration<Transaction>
         builder.Property(transaction => transaction.CardId)
             .IsRequired(false);
 
+        builder.Property(transaction => transaction.CreditCardInvoiceId)
+            .IsRequired(false);
+
         builder.Property(transaction => transaction.CategoryId)
             .IsRequired(false);
 
@@ -78,6 +81,11 @@ public class TransactionConfiguration : IEntityTypeConfiguration<Transaction>
             .HasForeignKey(transaction => transaction.CardId)
             .OnDelete(DeleteBehavior.Restrict);
 
+        builder.HasOne<CreditCardInvoice>()
+            .WithMany()
+            .HasForeignKey(transaction => transaction.CreditCardInvoiceId)
+            .OnDelete(DeleteBehavior.Restrict);
+
         builder.HasOne<Category>()
             .WithMany()
             .HasForeignKey(transaction => transaction.CategoryId)
@@ -87,5 +95,7 @@ public class TransactionConfiguration : IEntityTypeConfiguration<Transaction>
             .WithMany()
             .HasForeignKey(transaction => transaction.TransferId)
             .OnDelete(DeleteBehavior.Restrict);
+
+        builder.HasIndex(transaction => transaction.CreditCardInvoiceId);
     }
 }

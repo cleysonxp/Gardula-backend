@@ -10,6 +10,8 @@ public class Transaction
 
     public int? CardId { get; private set; }
 
+    public int? CreditCardInvoiceId { get; private set; }
+
     public int? CategoryId { get; private set; }
 
     public int? TransferId { get; private set; }
@@ -247,6 +249,9 @@ public class Transaction
         CardId = cardId;
         CategoryId = categoryId;
 
+        if (paymentMethod != PaymentMethod.CreditCard)
+            CreditCardInvoiceId = null;
+
         UpdatedAt = DateTimeOffset.UtcNow;
     }
 
@@ -266,6 +271,26 @@ public class Transaction
 
         Amount = amount;
         AccountId = accountId;
+        UpdatedAt = DateTimeOffset.UtcNow;
+    }
+
+    public void AssignToCreditCardInvoice(int invoiceId)
+    {
+        if (invoiceId <= 0)
+            throw new ArgumentException(
+                "InvoiceId must be greater than zero.",
+                nameof(invoiceId));
+
+        if (PaymentMethod != PaymentMethod.CreditCard)
+            throw new InvalidOperationException(
+                "Only credit card transactions can be assigned to an invoice.");
+
+        if (!CardId.HasValue)
+            throw new InvalidOperationException(
+                "A credit card transaction must have a CardId.");
+
+        CreditCardInvoiceId = invoiceId;
+
         UpdatedAt = DateTimeOffset.UtcNow;
     }
 }
