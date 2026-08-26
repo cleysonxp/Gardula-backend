@@ -20,6 +20,7 @@ public static class DependencyInjection
 
         services.AddScoped<AccountService>();
         services.AddScoped<CardService>();
+        services.AddScoped<CreditCardInvoiceService>();
         services.AddScoped<CategoryService>();
         services.AddScoped<TransactionService>();
         services.AddScoped<TransferService>();

@@ -14,6 +14,8 @@ public class TransactionService
     private readonly IAccountRepository _accountRepository;
     private readonly ICardRepository _cardRepository;
     private readonly ICategoryRepository _categoryRepository;
+    private readonly ICreditCardInvoiceRepository _creditCardInvoiceRepository;
+    private readonly CreditCardInvoiceService _creditCardInvoiceService;
     private readonly ICurrentUserService _currentUserService;
 
     public TransactionService(
@@ -21,12 +23,16 @@ public class TransactionService
         IAccountRepository accountRepository,
         ICardRepository cardRepository,
         ICategoryRepository categoryRepository,
+        ICreditCardInvoiceRepository creditCardInvoiceRepository,
+        CreditCardInvoiceService creditCardInvoiceService,
         ICurrentUserService currentUserService)
     {
         _transactionRepository = transactionRepository;
         _accountRepository = accountRepository;
         _cardRepository = cardRepository;
         _categoryRepository = categoryRepository;
+        _creditCardInvoiceRepository = creditCardInvoiceRepository;
+        _creditCardInvoiceService = creditCardInvoiceService;
         _currentUserService = currentUserService;
     }
 
@@ -92,6 +98,8 @@ public class TransactionService
                 nameof(request.CategoryId));
         }
 
+        Card? card = null;
+
         if (paymentMethod == PaymentMethod.CreditCard)
         {
             if (!request.CardId.HasValue)
@@ -108,7 +116,7 @@ public class TransactionService
                     nameof(request.AccountId));
             }
 
-            var card = await _cardRepository.GetByIdAsync(
+            card = await _cardRepository.GetByIdAsync(
                 request.CardId.Value,
                 userId,
                 cancellationToken);
@@ -117,6 +125,13 @@ public class TransactionService
             {
                 throw new ArgumentException(
                     "Card not found.",
+                    nameof(request.CardId));
+            }
+
+            if (!card.IsActive)
+            {
+                throw new ArgumentException(
+                    "Card is inactive.",
                     nameof(request.CardId));
             }
         }
@@ -235,6 +250,12 @@ public class TransactionService
                     installmentNumber,
                     totalInstallments);
 
+                await AssignCreditCardInvoiceAsync(
+                    transaction,
+                    card!,
+                    userId,
+                    cancellationToken);
+
                 await _transactionRepository.AddAsync(
                     transaction,
                     cancellationToken);
@@ -273,6 +294,15 @@ public class TransactionService
             null,
             null,
             null);
+
+        if (paymentMethod == PaymentMethod.CreditCard)
+        {
+            await AssignCreditCardInvoiceAsync(
+                transactionNormal,
+                card!,
+                userId,
+                cancellationToken);
+        }
 
         await _transactionRepository.AddAsync(
             transactionNormal,
@@ -325,6 +355,41 @@ public class TransactionService
             return null;
 
         return MapToResponse(transaction);
+    }
+
+    private async Task AssignCreditCardInvoiceAsync(
+        Transaction transaction,
+        Card card,
+        int userId,
+        CancellationToken cancellationToken)
+    {
+        var period = _creditCardInvoiceService.CalculatePeriod(
+            transaction.Date,
+            card.ClosingDay,
+            card.DueDay);
+
+        var invoice = await _creditCardInvoiceRepository.GetByDateAsync(
+            userId,
+            card.Id,
+            transaction.Date,
+            cancellationToken);
+
+        if (invoice is null)
+        {
+            invoice = new CreditCardInvoice(
+                userId,
+                card.Id,
+                period.StartDate,
+                period.ClosingDate,
+                period.DueDate);
+
+            await _creditCardInvoiceRepository.AddAsync(
+                invoice,
+                cancellationToken);
+        }
+
+        transaction.AssignToCreditCardInvoice(
+            invoice.Id);
     }
 
     private static TransactionResponse MapToResponse(
