@@ -98,6 +98,41 @@ public class Transaction
                     "CategoryId cannot be used for transfer transactions.",
                     nameof(categoryId));
         }
+        else if (type == TransactionType.CreditCardInvoicePayment)
+        {
+            if (!accountId.HasValue)
+                throw new ArgumentException(
+                    "AccountId is required for credit card invoice payments.",
+                    nameof(accountId));
+
+            if (categoryId.HasValue)
+                throw new ArgumentException(
+                    "CategoryId cannot be used for credit card invoice payments.",
+                    nameof(categoryId));
+
+            if (transferId.HasValue)
+                throw new ArgumentException(
+                    "TransferId cannot be used for credit card invoice payments.",
+                    nameof(transferId));
+
+            if (cardId.HasValue)
+                throw new ArgumentException(
+                    "CardId cannot be used for credit card invoice payments.",
+                    nameof(cardId));
+
+            if (installmentGroupId.HasValue ||
+                installmentNumber.HasValue ||
+                totalInstallments.HasValue)
+            {
+                throw new ArgumentException(
+                    "Credit card invoice payments cannot be installment transactions.");
+            }
+
+            if (paymentMethod == PaymentMethod.CreditCard)
+                throw new ArgumentException(
+                    "Credit card invoice payments cannot use credit card payment method.",
+                    nameof(paymentMethod));
+        }
         else
         {
             if (!categoryId.HasValue)
@@ -162,6 +197,7 @@ public class Transaction
         UserId = userId;
         AccountId = accountId;
         CardId = cardId;
+        CreditCardInvoiceId = null;
         CategoryId = categoryId;
         TransferId = transferId;
         Amount = amount;
@@ -177,6 +213,25 @@ public class Transaction
         UpdatedAt = CreatedAt;
     }
 
+    public void AssignToCreditCardInvoice(
+        int creditCardInvoiceId)
+    {
+        if (creditCardInvoiceId <= 0)
+            throw new ArgumentException(
+                "CreditCardInvoiceId must be greater than zero.",
+                nameof(creditCardInvoiceId));
+
+        if (Type != TransactionType.Expense ||
+            PaymentMethod != PaymentMethod.CreditCard)
+        {
+            throw new InvalidOperationException(
+                "Only credit card expense transactions can be assigned to an invoice.");
+        }
+
+        CreditCardInvoiceId = creditCardInvoiceId;
+        UpdatedAt = DateTimeOffset.UtcNow;
+    }
+
     public void Update(
         decimal amount,
         PaymentMethod paymentMethod,
@@ -186,6 +241,10 @@ public class Transaction
         int? cardId,
         int? categoryId)
     {
+        if (Type == TransactionType.CreditCardInvoicePayment)
+            throw new InvalidOperationException(
+                "Credit card invoice payments cannot be updated through the transaction flow.");
+
         if (amount <= 0)
             throw new ArgumentException(
                 "Transaction amount must be greater than zero.",
@@ -249,9 +308,6 @@ public class Transaction
         CardId = cardId;
         CategoryId = categoryId;
 
-        if (paymentMethod != PaymentMethod.CreditCard)
-            CreditCardInvoiceId = null;
-
         UpdatedAt = DateTimeOffset.UtcNow;
     }
 
@@ -274,23 +330,19 @@ public class Transaction
         UpdatedAt = DateTimeOffset.UtcNow;
     }
 
-    public void AssignToCreditCardInvoice(int invoiceId)
+    public void AssignToCreditCardInvoicePayment(
+        int creditCardInvoiceId)
     {
-        if (invoiceId <= 0)
+        if (creditCardInvoiceId <= 0)
             throw new ArgumentException(
-                "InvoiceId must be greater than zero.",
-                nameof(invoiceId));
+                "CreditCardInvoiceId must be greater than zero.",
+                nameof(creditCardInvoiceId));
 
-        if (PaymentMethod != PaymentMethod.CreditCard)
+        if (Type != TransactionType.CreditCardInvoicePayment)
             throw new InvalidOperationException(
-                "Only credit card transactions can be assigned to an invoice.");
+                "Only credit card invoice payment transactions can be assigned to an invoice.");
 
-        if (!CardId.HasValue)
-            throw new InvalidOperationException(
-                "A credit card transaction must have a CardId.");
-
-        CreditCardInvoiceId = invoiceId;
-
+        CreditCardInvoiceId = creditCardInvoiceId;
         UpdatedAt = DateTimeOffset.UtcNow;
     }
 }

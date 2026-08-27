@@ -55,6 +55,12 @@ public class GlobalExceptionHandler : IExceptionHandler
                 problemDetails.Title = "Invalid refresh token.";
                 problemDetails.Detail = exception.Message;
                 break;
+
+            case InvalidOperationException:
+                problemDetails.Status = StatusCodes.Status400BadRequest;
+                problemDetails.Title = "Invalid operation.";
+                problemDetails.Detail = exception.Message;
+                break;
         }
 
         httpContext.Response.StatusCode =

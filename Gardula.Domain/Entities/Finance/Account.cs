@@ -94,4 +94,12 @@ public class Account
         IsActive = false;
         UpdatedAt = DateTimeOffset.UtcNow;
     }
+
+    public void Debit(decimal amount)
+    {
+        if (amount <= 0)
+            throw new ArgumentException(
+                "Amount must be greater than zero.",
+                nameof(amount));
+    }
 }

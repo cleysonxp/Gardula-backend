@@ -11,10 +11,17 @@ namespace Gardula.Api.Controllers;
 public class CardsController : ControllerBase
 {
     private readonly CardService _cardService;
+    private readonly CreditCardInvoiceService _creditCardInvoiceService;
+    private readonly CreditCardInvoicePaymentService _creditCardInvoicePaymentService;
 
-    public CardsController(CardService cardService)
+    public CardsController(
+        CardService cardService,
+        CreditCardInvoiceService creditCardInvoiceService,
+        CreditCardInvoicePaymentService creditCardInvoicePaymentService)
     {
         _cardService = cardService;
+        _creditCardInvoiceService = creditCardInvoiceService;
+        _creditCardInvoicePaymentService = creditCardInvoicePaymentService;
     }
 
     [HttpPost]
@@ -109,5 +116,68 @@ public class CardsController : ControllerBase
             return NotFound();
 
         return NoContent();
+    }
+
+    [HttpGet("{cardId:int}/invoices")]
+    [ProducesResponseType(
+        typeof(List<CreditCardInvoiceListItem>),
+        StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<ActionResult<List<CreditCardInvoiceListItem>>> GetInvoices(
+        int cardId,
+        CancellationToken cancellationToken)
+    {
+        var response = await _creditCardInvoiceService.GetAllAsync(
+            cardId,
+            cancellationToken);
+
+        return Ok(response);
+    }
+
+    [HttpGet("{cardId:int}/invoices/{invoiceId:int}")]
+    [ProducesResponseType(
+        typeof(CreditCardInvoiceDetailResponse),
+        StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<CreditCardInvoiceDetailResponse>> GetInvoiceById(
+        int cardId,
+        int invoiceId,
+        CancellationToken cancellationToken)
+    {
+        var response = await _creditCardInvoiceService.GetByIdAsync(
+            cardId,
+            invoiceId,
+            cancellationToken);
+
+        if (response is null)
+            return NotFound();
+
+        return Ok(response);
+    }
+
+    [HttpPost("{cardId:int}/invoices/{invoiceId:int}/pay")]
+    [ProducesResponseType(
+        typeof(CreditCardInvoiceDetailResponse),
+        StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<CreditCardInvoiceDetailResponse>> PayInvoice(
+        int cardId,
+        int invoiceId,
+        PayCreditCardInvoiceRequest request,
+        CancellationToken cancellationToken)
+    {
+        var response = await _creditCardInvoicePaymentService.PayAsync(
+            cardId,
+            invoiceId,
+            request,
+            cancellationToken);
+
+        if (response is null)
+            return NotFound();
+
+        return Ok(response);
     }
 }

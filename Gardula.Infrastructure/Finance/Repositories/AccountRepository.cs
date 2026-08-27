@@ -78,7 +78,8 @@ public class AccountRepository : IAccountRepository
                 Amount =
                     transaction.Type == TransactionType.Income
                         ? transaction.Amount
-                        : transaction.Type == TransactionType.Expense
+                        : transaction.Type == TransactionType.Expense ||
+                          transaction.Type == TransactionType.CreditCardInvoicePayment
                             ? -transaction.Amount
                             : transfer.SourceAccountId == transaction.AccountId.Value
                                 ? -transaction.Amount
@@ -172,7 +173,10 @@ public class AccountRepository : IAccountRepository
                         .Where(transaction =>
                             transaction.UserId == userId &&
                             transaction.AccountId == accountId &&
-                            transaction.Type == TransactionType.Expense)
+                            (
+                                transaction.Type == TransactionType.Expense ||
+                                transaction.Type == TransactionType.CreditCardInvoicePayment
+                            ))
                         .Select(transaction => (decimal?)transaction.Amount)
                         .Sum() ?? 0m
                 )

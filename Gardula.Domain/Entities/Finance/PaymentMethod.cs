@@ -7,5 +7,6 @@ public enum PaymentMethod
     CreditCard = 3,
     Cash = 4,
     BankSlip = 5,
-    Other = 6
+    Other = 6,
+    Account = 7
 }
