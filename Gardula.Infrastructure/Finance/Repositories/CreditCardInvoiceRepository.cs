@@ -31,6 +31,49 @@ public class CreditCardInvoiceRepository : ICreditCardInvoiceRepository
                 cancellationToken);
     }
 
+    public async Task<List<CreditCardInvoice>> GetAllByCardIdAsync(
+        int userId,
+        int cardId,
+        CancellationToken cancellationToken = default)
+    {
+        return await _context.CreditCardInvoices
+            .Where(invoice =>
+                invoice.UserId == userId &&
+                invoice.CardId == cardId)
+            .OrderByDescending(invoice => invoice.ClosingDate)
+            .ToListAsync(cancellationToken);
+    }
+
+    public async Task<CreditCardInvoice?> GetByIdAsync(
+        int userId,
+        int cardId,
+        int invoiceId,
+        CancellationToken cancellationToken = default)
+    {
+        return await _context.CreditCardInvoices
+            .FirstOrDefaultAsync(
+                invoice =>
+                    invoice.Id == invoiceId &&
+                    invoice.UserId == userId &&
+                    invoice.CardId == cardId,
+                cancellationToken);
+    }
+
+    public async Task<List<Transaction>> GetTransactionsAsync(
+        int userId,
+        int cardId,
+        int invoiceId,
+        CancellationToken cancellationToken = default)
+    {
+        return await _context.Transactions
+            .Where(transaction =>
+                transaction.UserId == userId &&
+                transaction.CardId == cardId &&
+                transaction.CreditCardInvoiceId == invoiceId)
+            .OrderByDescending(transaction => transaction.Date)
+            .ToListAsync(cancellationToken);
+    }
+
     public async Task AddAsync(
         CreditCardInvoice invoice,
         CancellationToken cancellationToken = default)
