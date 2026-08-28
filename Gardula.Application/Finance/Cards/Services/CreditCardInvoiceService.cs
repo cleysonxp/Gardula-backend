@@ -56,6 +56,44 @@ public class CreditCardInvoiceService
         return response;
     }
 
+    public async Task<List<CreditCardInvoiceListItem>> GetAllAsync(
+        CancellationToken cancellationToken = default)
+    {
+        var userId = _currentUserService.UserId;
+
+        var invoices =
+            await _creditCardInvoiceRepository.GetAllByUserIdAsync(
+                userId,
+                cancellationToken);
+
+        var response = new List<CreditCardInvoiceListItem>();
+
+        foreach (var invoice in invoices)
+        {
+            var transactions =
+                await _creditCardInvoiceRepository.GetTransactionsAsync(
+                    userId,
+                    invoice.CardId,
+                    invoice.Id,
+                    cancellationToken);
+
+            var totalAmount = transactions.Sum(
+                transaction => transaction.Amount);
+
+            response.Add(
+                new CreditCardInvoiceListItem(
+                    invoice.Id,
+                    invoice.CardId,
+                    invoice.StartDate,
+                    invoice.ClosingDate,
+                    invoice.DueDate,
+                    totalAmount,
+                    (int)invoice.Status));
+        }
+
+        return response;
+    }
+
     public async Task<CreditCardInvoiceDetailResponse?> GetByIdAsync(
         int cardId,
         int invoiceId,

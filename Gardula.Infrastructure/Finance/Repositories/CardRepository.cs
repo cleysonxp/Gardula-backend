@@ -1,4 +1,5 @@
-﻿using Gardula.Application.Finance.Cards.Services;
+﻿using Gardula.Application.Finance.Cards.DTOs;
+using Gardula.Application.Finance.Cards.Services;
 using Gardula.Domain.Entities.Finance;
 using Gardula.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
@@ -53,5 +54,46 @@ public class CardRepository : ICardRepository
         CancellationToken cancellationToken = default)
     {
         await _context.SaveChangesAsync(cancellationToken);
+    }
+
+    public async Task<CardOverviewResponse> GetOverviewByUserIdAsync(
+        int userId,
+        CancellationToken cancellationToken = default)
+    {
+        var totalCards = await _context.Cards
+            .Where(card =>
+                card.UserId == userId &&
+                card.IsActive)
+            .CountAsync(cancellationToken);
+
+        var totalCreditLimit = await _context.Cards
+            .Where(card =>
+                card.UserId == userId &&
+                card.IsActive)
+            .Select(card => (decimal?)card.CreditLimit)
+            .SumAsync(cancellationToken) ?? 0m;
+
+        var totalUsedLimit = await (
+            from transaction in _context.Transactions
+
+            join invoice in _context.CreditCardInvoices
+                on transaction.CreditCardInvoiceId equals invoice.Id
+
+            where transaction.UserId == userId
+                  && transaction.CardId.HasValue
+                  && invoice.UserId == userId
+                  && invoice.Status != CreditCardInvoiceStatus.Paid
+
+            select (decimal?)transaction.Amount
+        ).SumAsync(cancellationToken) ?? 0m;
+
+        var totalAvailableLimit =
+            totalCreditLimit - totalUsedLimit;
+
+        return new CardOverviewResponse(
+            totalCards,
+            totalCreditLimit,
+            totalUsedLimit,
+            totalAvailableLimit);
     }
 }

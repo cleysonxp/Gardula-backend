@@ -69,6 +69,16 @@ public class CardService
             .ToList();
     }
 
+    public async Task<CardOverviewResponse> GetOverviewAsync(
+        CancellationToken cancellationToken = default)
+    {
+        var userId = _currentUserService.UserId;
+
+        return await _cardRepository.GetOverviewByUserIdAsync(
+            userId,
+            cancellationToken);
+    }
+
     public async Task<CardResponse?> GetByIdAsync(
         int id,
         CancellationToken cancellationToken = default)

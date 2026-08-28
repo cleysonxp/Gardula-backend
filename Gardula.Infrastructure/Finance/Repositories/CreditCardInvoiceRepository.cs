@@ -91,4 +91,15 @@ public class CreditCardInvoiceRepository : ICreditCardInvoiceRepository
     {
         await _context.SaveChangesAsync(cancellationToken);
     }
+
+    public async Task<List<CreditCardInvoice>> GetAllByUserIdAsync(
+        int userId,
+    CancellationToken cancellationToken = default)
+    {
+        return await _context.CreditCardInvoices
+            .Where(invoice =>
+                invoice.UserId == userId)
+            .OrderByDescending(invoice => invoice.ClosingDate)
+            .ToListAsync(cancellationToken);
+    }
 }

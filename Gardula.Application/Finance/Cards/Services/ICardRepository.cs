@@ -1,4 +1,5 @@
-﻿using Gardula.Domain.Entities.Finance;
+﻿using Gardula.Application.Finance.Cards.DTOs;
+using Gardula.Domain.Entities.Finance;
 
 namespace Gardula.Application.Finance.Cards.Services;
 
@@ -18,5 +19,9 @@ public interface ICardRepository
         CancellationToken cancellationToken = default);
 
     Task SaveChangesAsync(
+        CancellationToken cancellationToken = default);
+
+    Task<CardOverviewResponse> GetOverviewByUserIdAsync(
+        int userId,
         CancellationToken cancellationToken = default);
 }

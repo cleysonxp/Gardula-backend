@@ -33,4 +33,8 @@ public interface ICreditCardInvoiceRepository
 
     Task SaveChangesAsync(
         CancellationToken cancellationToken = default);
+
+    Task<List<CreditCardInvoice>> GetAllByUserIdAsync(
+        int userId,
+        CancellationToken cancellationToken = default);
 }

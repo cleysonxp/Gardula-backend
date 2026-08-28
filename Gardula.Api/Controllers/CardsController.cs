@@ -57,6 +57,34 @@ public class CardsController : ControllerBase
         return Ok(response);
     }
 
+    [HttpGet("overview")]
+    [ProducesResponseType(
+        typeof(CardOverviewResponse),
+        StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<ActionResult<CardOverviewResponse>> GetOverview(
+        CancellationToken cancellationToken)
+    {
+        var response = await _cardService.GetOverviewAsync(
+            cancellationToken);
+
+        return Ok(response);
+    }
+
+    [HttpGet("invoices")]
+    [ProducesResponseType(
+        typeof(List<CreditCardInvoiceListItem>),
+        StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<ActionResult<List<CreditCardInvoiceListItem>>> GetAllInvoices(
+        CancellationToken cancellationToken)
+    {
+        var response = await _creditCardInvoiceService.GetAllAsync(
+            cancellationToken);
+
+        return Ok(response);
+    }
+
     [HttpGet("{id:int}")]
     [ProducesResponseType(
         typeof(CardResponse),
