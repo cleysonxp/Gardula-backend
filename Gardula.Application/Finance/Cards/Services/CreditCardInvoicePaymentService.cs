@@ -88,35 +88,34 @@ public class CreditCardInvoicePaymentService
                 "Account is inactive.",
                 nameof(request.AccountId));
 
-        var transactions = await _invoiceRepository.GetTransactionsAsync(
-            userId,
-            cardId,
-            invoiceId,
-            cancellationToken);
-
-        var totalAmount = transactions.Sum(
-            transaction => transaction.Amount);
+        var totalAmount = invoice.TotalAmount;
 
         if (totalAmount <= 0)
             throw new InvalidOperationException(
                 "Credit card invoice has no amount to pay.");
 
-        var accountBalance = await _accountRepository.GetBalanceByAccountIdAsync(
-            request.AccountId,
-            userId,
-            cancellationToken);
+        var accountBalance =
+            await _accountRepository.GetBalanceByAccountIdAsync(
+                request.AccountId,
+                userId,
+                cancellationToken);
 
         if (accountBalance < totalAmount)
             throw new InvalidOperationException(
                 "Insufficient funds.");
 
+        account.Debit(totalAmount);
+
+        var transactionPaymentMethod =
+            paymentMethod == CreditCardInvoicePaymentMethod.Pix
+                ? PaymentMethod.Pix
+                : PaymentMethod.Account;
+
         var paymentTransaction = new Transaction(
             userId,
             totalAmount,
             TransactionType.CreditCardInvoicePayment,
-            paymentMethod == CreditCardInvoicePaymentMethod.Pix
-                ? PaymentMethod.Pix
-                : PaymentMethod.Account,
+            transactionPaymentMethod,
             "Pagamento da fatura do cartão",
             DateTimeOffset.UtcNow,
             request.AccountId);
