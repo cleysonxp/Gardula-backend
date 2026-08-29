@@ -56,262 +56,64 @@ public class TransactionService
                 "Invalid payment method.",
                 nameof(request.PaymentMethod));
 
-        if (type == TransactionType.Transfer)
-        {
-            throw new ArgumentException(
-                "Transfers must be created through the transfer flow.",
-                nameof(request.Type));
-        }
-
-        if (!request.CategoryId.HasValue)
-        {
-            throw new ArgumentException(
-                "CategoryId is required.",
-                nameof(request.CategoryId));
-        }
-
-        var category = await _categoryRepository.GetByIdAsync(
-            request.CategoryId.Value,
-            userId,
-            cancellationToken);
-
-        if (category is null)
-        {
-            throw new ArgumentException(
-                "Category not found.",
-                nameof(request.CategoryId));
-        }
-
-        if (category.Type == CategoryType.Income &&
-            type != TransactionType.Income)
-        {
-            throw new ArgumentException(
-                "Income category cannot be used for an expense.",
-                nameof(request.CategoryId));
-        }
-
-        if (category.Type == CategoryType.Expense &&
-            type != TransactionType.Expense)
-        {
-            throw new ArgumentException(
-                "Expense category cannot be used for an income.",
-                nameof(request.CategoryId));
-        }
-
-        Card? card = null;
+        Account? account = null;
 
         if (paymentMethod == PaymentMethod.CreditCard)
         {
-            if (!request.CardId.HasValue)
-            {
-                throw new ArgumentException(
-                    "CardId is required for credit card transactions.",
-                    nameof(request.CardId));
-            }
-
-            if (request.AccountId.HasValue)
-            {
-                throw new ArgumentException(
-                    "AccountId cannot be used with credit card transactions.",
-                    nameof(request.AccountId));
-            }
-
-            card = await _cardRepository.GetByIdAsync(
-                request.CardId.Value,
+            var card = await _cardRepository.GetByIdAsync(
+                request.CardId!.Value,
                 userId,
                 cancellationToken);
 
-            if (card is null)
-            {
+            if (card is null || !card.IsActive)
                 throw new ArgumentException(
-                    "Card not found.",
+                    "Card not found or inactive.",
                     nameof(request.CardId));
-            }
-
-            if (!card.IsActive)
-            {
-                throw new ArgumentException(
-                    "Card is inactive.",
-                    nameof(request.CardId));
-            }
         }
         else
         {
-            if (!request.AccountId.HasValue)
-            {
-                throw new ArgumentException(
-                    "AccountId is required for this payment method.",
-                    nameof(request.AccountId));
-            }
-
-            if (request.CardId.HasValue)
-            {
-                throw new ArgumentException(
-                    "CardId can only be used for credit card transactions.",
-                    nameof(request.CardId));
-            }
-
-            var account = await _accountRepository.GetByIdAsync(
-                request.AccountId.Value,
+            account = await _accountRepository.GetByIdAsync(
+                request.AccountId!.Value,
                 userId,
                 cancellationToken);
 
-            if (account is null)
-            {
+            if (account is null || !account.IsActive)
                 throw new ArgumentException(
-                    "Account not found.",
+                    "Account not found or inactive.",
                     nameof(request.AccountId));
-            }
-
-            if (!account.IsActive)
-            {
-                throw new ArgumentException(
-                    "Account is inactive.",
-                    nameof(request.AccountId));
-            }
         }
 
-        var totalInstallments = request.TotalInstallments ?? 1;
-
-        if (totalInstallments <= 0)
-        {
-            throw new ArgumentException(
-                "TotalInstallments must be greater than zero.",
-                nameof(request.TotalInstallments));
-        }
-
-        // ============================================================
-        // TRANSAÇÃO PARCELADA
-        // ============================================================
-
-        if (totalInstallments > 1)
-        {
-            if (type != TransactionType.Expense)
-            {
-                throw new ArgumentException(
-                    "Only expense transactions can be split into installments.",
-                    nameof(request.TotalInstallments));
-            }
-
-            if (paymentMethod != PaymentMethod.CreditCard)
-            {
-                throw new ArgumentException(
-                    "Installments are only available for credit card transactions.",
-                    nameof(request.TotalInstallments));
-            }
-
-            if (request.InstallmentGroupId.HasValue)
-            {
-                throw new ArgumentException(
-                    "InstallmentGroupId is generated automatically.",
-                    nameof(request.InstallmentGroupId));
-            }
-
-            if (request.InstallmentNumber.HasValue)
-            {
-                throw new ArgumentException(
-                    "InstallmentNumber is generated automatically.",
-                    nameof(request.InstallmentNumber));
-            }
-
-            var installmentGroupId = Guid.NewGuid();
-
-            var installmentAmount = Math.Round(
-                request.Amount / totalInstallments,
-                2,
-                MidpointRounding.AwayFromZero);
-
-            Transaction? firstTransaction = null;
-
-            for (var installmentNumber = 1;
-                 installmentNumber <= totalInstallments;
-                 installmentNumber++)
-            {
-                var amount = installmentNumber == totalInstallments
-                    ? request.Amount -
-                      (installmentAmount * (totalInstallments - 1))
-                    : installmentAmount;
-
-                var installmentDate = request.Date.AddMonths(
-                    installmentNumber - 1);
-
-                var transaction = new Transaction(
-                    userId,
-                    amount,
-                    type,
-                    paymentMethod,
-                    request.Description.Trim(),
-                    installmentDate,
-                    request.AccountId,
-                    request.CardId,
-                    request.CategoryId,
-                    null,
-                    installmentGroupId,
-                    installmentNumber,
-                    totalInstallments);
-
-                await AssignCreditCardInvoiceAsync(
-                    transaction,
-                    card!,
-                    userId,
-                    cancellationToken);
-
-                await _transactionRepository.AddAsync(
-                    transaction,
-                    cancellationToken);
-
-                firstTransaction ??= transaction;
-            }
-
-            await _transactionRepository.SaveChangesAsync(
-                cancellationToken);
-
-            return MapToResponse(firstTransaction!);
-        }
-
-        // ============================================================
-        // TRANSAÇÃO NORMAL
-        // ============================================================
-
-        if (request.InstallmentGroupId.HasValue ||
-            request.InstallmentNumber.HasValue)
-        {
-            throw new ArgumentException(
-                "Installment information is only allowed for installment transactions.");
-        }
-
-        var transactionNormal = new Transaction(
+        var transaction = new Transaction(
             userId,
             request.Amount,
             type,
             paymentMethod,
             request.Description.Trim(),
             request.Date,
-            request.AccountId,
-            request.CardId,
-            request.CategoryId,
-            null,
-            null,
-            null,
-            null);
+            accountId: request.AccountId,
+            cardId: request.CardId,
+            categoryId: request.CategoryId,
+            installmentGroupId: request.InstallmentGroupId,
+            installmentNumber: request.InstallmentNumber,
+            totalInstallments: request.TotalInstallments);
 
-        if (paymentMethod == PaymentMethod.CreditCard)
+        if (paymentMethod != PaymentMethod.CreditCard)
         {
-            await AssignCreditCardInvoiceAsync(
-                transactionNormal,
-                card!,
-                userId,
-                cancellationToken);
+            if (type == TransactionType.Income)
+                account!.Credit(request.Amount);
+
+            if (type == TransactionType.Expense)
+                account!.Debit(request.Amount);
         }
 
         await _transactionRepository.AddAsync(
-            transactionNormal,
+            transaction,
             cancellationToken);
 
         await _transactionRepository.SaveChangesAsync(
             cancellationToken);
 
-        return MapToResponse(transactionNormal);
+        return MapToResponse(transaction);
     }
 
     public async Task<PagedResponse<TransactionListResponse>> GetAllAsync(

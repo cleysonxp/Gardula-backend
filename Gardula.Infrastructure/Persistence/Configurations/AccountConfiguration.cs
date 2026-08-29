@@ -30,6 +30,10 @@ public class AccountConfiguration : IEntityTypeConfiguration<Account>
             .IsRequired()
             .HasPrecision(18, 2);
 
+        builder.Property(account => account.CurrentBalance)
+            .IsRequired()
+            .HasPrecision(18, 2);
+
         builder.Property(account => account.Color)
             .IsRequired()
             .HasMaxLength(20);

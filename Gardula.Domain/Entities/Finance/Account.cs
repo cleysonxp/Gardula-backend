@@ -24,6 +24,8 @@ public class Account
 
     public decimal InitialBalance { get; private set; }
 
+    public decimal CurrentBalance { get; private set; }
+
     public string Color { get; private set; } = string.Empty;
 
     public bool IsActive { get; private set; } = true;
@@ -63,6 +65,7 @@ public class Account
         Name = name;
         Type = type;
         InitialBalance = initialBalance;
+        CurrentBalance = initialBalance;
         Color = color;
 
         CreatedAt = DateTimeOffset.UtcNow;
@@ -83,6 +86,28 @@ public class Account
         UpdatedAt = DateTimeOffset.UtcNow;
     }
 
+    public void Credit(decimal amount)
+    {
+        if (amount <= 0)
+            throw new ArgumentException(
+                "Amount must be greater than zero.",
+                nameof(amount));
+
+        CurrentBalance += amount;
+        UpdatedAt = DateTimeOffset.UtcNow;
+    }
+
+    public void Debit(decimal amount)
+    {
+        if (amount <= 0)
+            throw new ArgumentException(
+                "Amount must be greater than zero.",
+                nameof(amount));
+
+        CurrentBalance -= amount;
+        UpdatedAt = DateTimeOffset.UtcNow;
+    }
+
     public void Activate()
     {
         IsActive = true;
@@ -93,13 +118,5 @@ public class Account
     {
         IsActive = false;
         UpdatedAt = DateTimeOffset.UtcNow;
-    }
-
-    public void Debit(decimal amount)
-    {
-        if (amount <= 0)
-            throw new ArgumentException(
-                "Amount must be greater than zero.",
-                nameof(amount));
     }
 }
