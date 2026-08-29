@@ -33,6 +33,10 @@ public class CreditCardInvoiceConfiguration
         builder.Property(invoice => invoice.DueDate)
             .IsRequired();
 
+        builder.Property(invoice => invoice.TotalAmount)
+            .IsRequired()
+            .HasPrecision(18, 2);
+
         builder.Property(invoice => invoice.Status)
             .IsRequired();
 

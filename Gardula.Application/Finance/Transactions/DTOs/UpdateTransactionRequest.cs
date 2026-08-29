@@ -2,6 +2,7 @@
 
 public record UpdateTransactionRequest(
     decimal Amount,
+    int Type,
     string Description,
     DateTimeOffset Date,
     int CategoryId,

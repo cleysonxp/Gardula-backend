@@ -234,6 +234,7 @@ public class Transaction
 
     public void Update(
         decimal amount,
+        TransactionType type,
         PaymentMethod paymentMethod,
         string description,
         DateTimeOffset date,
@@ -244,6 +245,11 @@ public class Transaction
         if (Type == TransactionType.CreditCardInvoicePayment)
             throw new InvalidOperationException(
                 "Credit card invoice payments cannot be updated through the transaction flow.");
+
+        if (!Enum.IsDefined(type))
+            throw new ArgumentException(
+                "Invalid transaction type.",
+                nameof(type));
 
         if (amount <= 0)
             throw new ArgumentException(
@@ -300,6 +306,7 @@ public class Transaction
                     nameof(cardId));
         }
 
+        Type = type;
         Amount = amount;
         PaymentMethod = paymentMethod;
         Description = description.Trim();

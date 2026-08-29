@@ -14,6 +14,8 @@ public class CreditCardInvoice
 
     public DateTimeOffset DueDate { get; private set; }
 
+    public decimal TotalAmount { get; private set; }
+
     public CreditCardInvoiceStatus Status { get; private set; }
 
     public DateTimeOffset? PaidAt { get; private set; }
@@ -54,10 +56,37 @@ public class CreditCardInvoice
         StartDate = startDate;
         ClosingDate = closingDate;
         DueDate = dueDate;
+        TotalAmount = 0m;
         Status = CreditCardInvoiceStatus.Open;
 
         CreatedAt = DateTimeOffset.UtcNow;
         UpdatedAt = CreatedAt;
+    }
+
+    public void AddAmount(decimal amount)
+    {
+        if (amount <= 0)
+            throw new ArgumentException(
+                "Amount must be greater than zero.",
+                nameof(amount));
+
+        TotalAmount += amount;
+        UpdatedAt = DateTimeOffset.UtcNow;
+    }
+
+    public void RemoveAmount(decimal amount)
+    {
+        if (amount <= 0)
+            throw new ArgumentException(
+                "Amount must be greater than zero.",
+                nameof(amount));
+
+        if (amount > TotalAmount)
+            throw new InvalidOperationException(
+                "Amount cannot be greater than the invoice total.");
+
+        TotalAmount -= amount;
+        UpdatedAt = DateTimeOffset.UtcNow;
     }
 
     public void MarkAsPaid()

@@ -57,11 +57,17 @@ public class TransactionService
                 nameof(request.PaymentMethod));
 
         Account? account = null;
+        Card? card = null;
 
         if (paymentMethod == PaymentMethod.CreditCard)
         {
-            var card = await _cardRepository.GetByIdAsync(
-                request.CardId!.Value,
+            if (!request.CardId.HasValue)
+                throw new ArgumentException(
+                    "CardId is required for credit card transactions.",
+                    nameof(request.CardId));
+
+            card = await _cardRepository.GetByIdAsync(
+                request.CardId.Value,
                 userId,
                 cancellationToken);
 
@@ -72,8 +78,13 @@ public class TransactionService
         }
         else
         {
+            if (!request.AccountId.HasValue)
+                throw new ArgumentException(
+                    "AccountId is required for this payment method.",
+                    nameof(request.AccountId));
+
             account = await _accountRepository.GetByIdAsync(
-                request.AccountId!.Value,
+                request.AccountId.Value,
                 userId,
                 cancellationToken);
 
@@ -112,6 +123,18 @@ public class TransactionService
 
         await _transactionRepository.SaveChangesAsync(
             cancellationToken);
+
+        if (paymentMethod == PaymentMethod.CreditCard)
+        {
+            await AssignCreditCardInvoiceAsync(
+                transaction,
+                card!,
+                userId,
+                cancellationToken);
+
+            await _transactionRepository.SaveChangesAsync(
+                cancellationToken);
+        }
 
         return MapToResponse(transaction);
     }
@@ -189,6 +212,8 @@ public class TransactionService
                 invoice,
                 cancellationToken);
         }
+
+        invoice.AddAmount(transaction.Amount);
 
         transaction.AssignToCreditCardInvoice(
             invoice.Id);
@@ -318,6 +343,15 @@ public class TransactionService
                 "Installment transactions must be edited through the installment flow.");
         }
 
+        var newType = (TransactionType)request.Type;
+
+        if (!Enum.IsDefined(newType))
+        {
+            throw new ArgumentException(
+                "Invalid transaction type.",
+                nameof(request.Type));
+        }
+
         var category = await _categoryRepository.GetByIdAsync(
             request.CategoryId,
             userId,
@@ -331,7 +365,7 @@ public class TransactionService
         }
 
         if (category.Type == CategoryType.Income &&
-            transaction.Type != TransactionType.Income)
+            newType != TransactionType.Income)
         {
             throw new ArgumentException(
                 "Income category cannot be used for an expense.",
@@ -339,7 +373,7 @@ public class TransactionService
         }
 
         if (category.Type == CategoryType.Expense &&
-            transaction.Type != TransactionType.Expense)
+            newType != TransactionType.Expense)
         {
             throw new ArgumentException(
                 "Expense category cannot be used for an income.",
@@ -354,6 +388,9 @@ public class TransactionService
                 "Invalid payment method.",
                 nameof(request.PaymentMethod));
         }
+
+        Account? newAccount = null;
+        Card? newCard = null;
 
         if (paymentMethod == PaymentMethod.CreditCard)
         {
@@ -371,19 +408,19 @@ public class TransactionService
                     nameof(request.AccountId));
             }
 
-            var card = await _cardRepository.GetByIdAsync(
+            newCard = await _cardRepository.GetByIdAsync(
                 request.CardId.Value,
                 userId,
                 cancellationToken);
 
-            if (card is null)
+            if (newCard is null)
             {
                 throw new ArgumentException(
                     "Card not found.",
                     nameof(request.CardId));
             }
 
-            if (!card.IsActive)
+            if (!newCard.IsActive)
             {
                 throw new ArgumentException(
                     "Card is inactive.",
@@ -406,19 +443,19 @@ public class TransactionService
                     nameof(request.CardId));
             }
 
-            var account = await _accountRepository.GetByIdAsync(
+            newAccount = await _accountRepository.GetByIdAsync(
                 request.AccountId.Value,
                 userId,
                 cancellationToken);
 
-            if (account is null)
+            if (newAccount is null)
             {
                 throw new ArgumentException(
                     "Account not found.",
                     nameof(request.AccountId));
             }
 
-            if (!account.IsActive)
+            if (!newAccount.IsActive)
             {
                 throw new ArgumentException(
                     "Account is inactive.",
@@ -426,20 +463,98 @@ public class TransactionService
             }
         }
 
+        var oldPaymentMethod = transaction.PaymentMethod;
+        var oldType = transaction.Type;
+        var oldAmount = transaction.Amount;
+        var oldAccountId = transaction.AccountId;
+        var oldCardId = transaction.CardId;
+        var oldInvoiceId = transaction.CreditCardInvoiceId;
+
+        if (oldPaymentMethod != PaymentMethod.CreditCard)
+        {
+            if (!oldAccountId.HasValue)
+            {
+                throw new InvalidOperationException(
+                    "Transaction account is missing.");
+            }
+
+            var oldAccount = await _accountRepository.GetByIdAsync(
+                oldAccountId.Value,
+                userId,
+                cancellationToken);
+
+            if (oldAccount is null)
+            {
+                throw new ArgumentException(
+                    "Account not found.",
+                    nameof(transaction.AccountId));
+            }
+
+            if (oldType == TransactionType.Income)
+            {
+                oldAccount.Debit(oldAmount);
+            }
+            else if (oldType == TransactionType.Expense)
+            {
+                oldAccount.Credit(oldAmount);
+            }
+        }
+        else
+        {
+            if (oldCardId.HasValue &&
+                oldInvoiceId.HasValue)
+            {
+                var oldInvoice = await _creditCardInvoiceRepository.GetByIdAsync(
+                    userId,
+                    oldCardId.Value,
+                    oldInvoiceId.Value,
+                    cancellationToken);
+
+                if (oldInvoice is not null)
+                {
+                    oldInvoice.RemoveAmount(oldAmount);
+                }
+            }
+        }
+
         transaction.Update(
             request.Amount,
+            newType,
             paymentMethod,
-            request.Description,
+            request.Description.Trim(),
             request.Date,
             request.AccountId,
             request.CardId,
             request.CategoryId);
+
+        if (paymentMethod != PaymentMethod.CreditCard)
+        {
+            if (newType == TransactionType.Income)
+            {
+                newAccount!.Credit(request.Amount);
+            }
+            else if (newType == TransactionType.Expense)
+            {
+                newAccount!.Debit(request.Amount);
+            }
+        }
+        else
+        {
+            await AssignCreditCardInvoiceAsync(
+                transaction,
+                newCard!,
+                userId,
+                cancellationToken);
+        }
 
         await _transactionRepository.UpdateAsync(
             transaction,
             cancellationToken);
 
         await _transactionRepository.SaveChangesAsync(
+            cancellationToken);
+
+        await _creditCardInvoiceRepository.SaveChangesAsync(
             cancellationToken);
 
         return MapToResponse(transaction);
@@ -474,12 +589,67 @@ public class TransactionService
                 "Installment transactions must be deleted through the installment flow.");
         }
 
+        if (transaction.PaymentMethod != PaymentMethod.CreditCard)
+        {
+            var account = await _accountRepository.GetByIdAsync(
+                transaction.AccountId!.Value,
+                userId,
+                cancellationToken);
+
+            if (account is null)
+            {
+                throw new ArgumentException(
+                    "Account not found.",
+                    nameof(transaction.AccountId));
+            }
+
+            if (transaction.Type == TransactionType.Income)
+            {
+                account.Debit(transaction.Amount);
+            }
+
+            if (transaction.Type == TransactionType.Expense)
+            {
+                account.Credit(transaction.Amount);
+            }
+        }
+        else
+        {
+            if (!transaction.CardId.HasValue ||
+                !transaction.CreditCardInvoiceId.HasValue)
+            {
+                throw new InvalidOperationException(
+                    "Credit card transaction is not linked to an invoice.");
+            }
+
+            var invoice = await _creditCardInvoiceRepository.GetByIdAsync(
+                userId,
+                transaction.CardId.Value,
+                transaction.CreditCardInvoiceId.Value,
+                cancellationToken);
+
+            if (invoice is null)
+            {
+                throw new ArgumentException(
+                    "Credit card invoice not found.",
+                    nameof(transaction.CreditCardInvoiceId));
+            }
+
+            invoice.RemoveAmount(transaction.Amount);
+        }
+
         await _transactionRepository.DeleteAsync(
             transaction,
             cancellationToken);
 
         await _transactionRepository.SaveChangesAsync(
             cancellationToken);
+
+        if (transaction.PaymentMethod == PaymentMethod.CreditCard)
+        {
+            await _creditCardInvoiceRepository.SaveChangesAsync(
+                cancellationToken);
+        }
     }
 
     public async Task DeleteInstallmentGroupAsync(
@@ -584,6 +754,7 @@ public class TransactionService
 
             installment.Update(
                 amount,
+                installment.Type,
                 installment.PaymentMethod,
                 request.Description.Trim(),
                 date,
@@ -598,5 +769,4 @@ public class TransactionService
         return MapToResponse(
             installments.First(x => x.Id == id));
     }
-
 }
