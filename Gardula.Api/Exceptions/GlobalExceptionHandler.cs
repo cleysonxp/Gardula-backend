@@ -56,6 +56,12 @@ public class GlobalExceptionHandler : IExceptionHandler
                 problemDetails.Detail = exception.Message;
                 break;
 
+            case ArgumentException:
+                problemDetails.Status = StatusCodes.Status400BadRequest;
+                problemDetails.Title = "Invalid argument.";
+                problemDetails.Detail = exception.Message;
+                break;
+
             case InvalidOperationException:
                 problemDetails.Status = StatusCodes.Status400BadRequest;
                 problemDetails.Title = "Invalid operation.";

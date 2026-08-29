@@ -64,6 +64,12 @@ public class TransferService
                 nameof(request.SourceAccountId));
         }
 
+        if (sourceAccount.CurrentBalance < request.Amount)
+        {
+            throw new InvalidOperationException(
+                "Insufficient funds.");
+        }
+
         var destinationAccount = await _accountRepository.GetByIdAsync(
             request.DestinationAccountId,
             userId,
@@ -88,6 +94,9 @@ public class TransferService
             request.SourceAccountId,
             request.DestinationAccountId,
             request.Amount);
+
+        sourceAccount.Debit(request.Amount);
+        destinationAccount.Credit(request.Amount);
 
         await _transferRepository.AddAsync(
             transfer,
@@ -175,44 +184,6 @@ public class TransferService
                 "Transfer not found.");
         }
 
-        var sourceAccount = await _accountRepository.GetByIdAsync(
-            request.SourceAccountId,
-            userId,
-            cancellationToken);
-
-        if (sourceAccount is null)
-        {
-            throw new ArgumentException(
-                "Source account not found.",
-                nameof(request.SourceAccountId));
-        }
-
-        if (!sourceAccount.IsActive)
-        {
-            throw new ArgumentException(
-                "Source account is inactive.",
-                nameof(request.SourceAccountId));
-        }
-
-        var destinationAccount = await _accountRepository.GetByIdAsync(
-            request.DestinationAccountId,
-            userId,
-            cancellationToken);
-
-        if (destinationAccount is null)
-        {
-            throw new ArgumentException(
-                "Destination account not found.",
-                nameof(request.DestinationAccountId));
-        }
-
-        if (!destinationAccount.IsActive)
-        {
-            throw new ArgumentException(
-                "Destination account is inactive.",
-                nameof(request.DestinationAccountId));
-        }
-
         if (request.SourceAccountId == request.DestinationAccountId)
         {
             throw new ArgumentException(
@@ -239,18 +210,99 @@ public class TransferService
                 "Transfer must have exactly two transactions.");
         }
 
+        var sourceTransaction = transactions.FirstOrDefault(
+            transaction =>
+                transaction.AccountId == transfer.SourceAccountId);
+
+        var destinationTransaction = transactions.FirstOrDefault(
+            transaction =>
+                transaction.AccountId == transfer.DestinationAccountId);
+
+        if (sourceTransaction is null ||
+            destinationTransaction is null)
+        {
+            throw new InvalidOperationException(
+                "Transfer transactions are invalid.");
+        }
+
+        var oldSourceAccount = await _accountRepository.GetByIdAsync(
+            transfer.SourceAccountId,
+            userId,
+            cancellationToken);
+
+        if (oldSourceAccount is null)
+        {
+            throw new ArgumentException(
+                "Source account not found.",
+                nameof(transfer.SourceAccountId));
+        }
+
+        var oldDestinationAccount = await _accountRepository.GetByIdAsync(
+            transfer.DestinationAccountId,
+            userId,
+            cancellationToken);
+
+        if (oldDestinationAccount is null)
+        {
+            throw new ArgumentException(
+                "Destination account not found.",
+                nameof(transfer.DestinationAccountId));
+        }
+
+        var newSourceAccount = await _accountRepository.GetByIdAsync(
+            request.SourceAccountId,
+            userId,
+            cancellationToken);
+
+        if (newSourceAccount is null)
+        {
+            throw new ArgumentException(
+                "Source account not found.",
+                nameof(request.SourceAccountId));
+        }
+
+        if (!newSourceAccount.IsActive)
+        {
+            throw new ArgumentException(
+                "Source account is inactive.",
+                nameof(request.SourceAccountId));
+        }
+
+        var newDestinationAccount = await _accountRepository.GetByIdAsync(
+            request.DestinationAccountId,
+            userId,
+            cancellationToken);
+
+        if (newDestinationAccount is null)
+        {
+            throw new ArgumentException(
+                "Destination account not found.",
+                nameof(request.DestinationAccountId));
+        }
+
+        if (!newDestinationAccount.IsActive)
+        {
+            throw new ArgumentException(
+                "Destination account is inactive.",
+                nameof(request.DestinationAccountId));
+        }
+
+        oldSourceAccount.Credit(transfer.Amount);
+        oldDestinationAccount.Debit(transfer.Amount);
+
+        if (newSourceAccount.CurrentBalance < request.Amount)
+        {
+            throw new InvalidOperationException(
+                "Insufficient funds.");
+        }
+
+        newSourceAccount.Debit(request.Amount);
+        newDestinationAccount.Credit(request.Amount);
+
         transfer.Update(
             request.SourceAccountId,
             request.DestinationAccountId,
             request.Amount);
-
-        var sourceTransaction = transactions
-            .First(transaction =>
-                transaction.AccountId == transfer.SourceAccountId);
-
-        var destinationTransaction = transactions
-            .First(transaction =>
-                transaction.AccountId == transfer.DestinationAccountId);
 
         sourceTransaction.UpdateTransfer(
             request.Amount,
@@ -287,6 +339,33 @@ public class TransferService
             throw new KeyNotFoundException(
                 "Transfer not found.");
         }
+
+        var sourceAccount = await _accountRepository.GetByIdAsync(
+            transfer.SourceAccountId,
+            userId,
+            cancellationToken);
+
+        if (sourceAccount is null)
+        {
+            throw new ArgumentException(
+                "Source account not found.",
+                nameof(transfer.SourceAccountId));
+        }
+
+        var destinationAccount = await _accountRepository.GetByIdAsync(
+            transfer.DestinationAccountId,
+            userId,
+            cancellationToken);
+
+        if (destinationAccount is null)
+        {
+            throw new ArgumentException(
+                "Destination account not found.",
+                nameof(transfer.DestinationAccountId));
+        }
+
+        destinationAccount.Debit(transfer.Amount);
+        sourceAccount.Credit(transfer.Amount);
 
         await _transactionRepository.DeleteByTransferIdAsync(
             transfer.Id,
