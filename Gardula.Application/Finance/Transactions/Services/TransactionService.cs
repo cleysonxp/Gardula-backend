@@ -56,6 +56,35 @@ public class TransactionService
                 "Invalid payment method.",
                 nameof(request.PaymentMethod));
 
+        if (request.Amount <= 0)
+            throw new ArgumentException(
+                "Amount must be greater than zero.",
+                nameof(request.Amount));
+
+        if (request.TotalInstallments.HasValue &&
+            request.TotalInstallments.Value <= 1)
+        {
+            throw new ArgumentException(
+                "Total installments must be greater than one.",
+                nameof(request.TotalInstallments));
+        }
+
+        if (request.TotalInstallments.HasValue &&
+            paymentMethod != PaymentMethod.CreditCard)
+        {
+            throw new ArgumentException(
+                "Installments are only available for credit card transactions.",
+                nameof(request.TotalInstallments));
+        }
+
+        if (request.TotalInstallments.HasValue &&
+            type != TransactionType.Expense)
+        {
+            throw new ArgumentException(
+                "Installments are only available for expense transactions.",
+                nameof(request.Type));
+        }
+
         Account? account = null;
         Card? card = null;
 
@@ -65,6 +94,11 @@ public class TransactionService
                 throw new ArgumentException(
                     "CardId is required for credit card transactions.",
                     nameof(request.CardId));
+
+            if (request.AccountId.HasValue)
+                throw new ArgumentException(
+                    "AccountId cannot be used with credit card transactions.",
+                    nameof(request.AccountId));
 
             card = await _cardRepository.GetByIdAsync(
                 request.CardId.Value,
@@ -83,6 +117,11 @@ public class TransactionService
                     "AccountId is required for this payment method.",
                     nameof(request.AccountId));
 
+            if (request.CardId.HasValue)
+                throw new ArgumentException(
+                    "CardId can only be used with credit card transactions.",
+                    nameof(request.CardId));
+
             account = await _accountRepository.GetByIdAsync(
                 request.AccountId.Value,
                 userId,
@@ -94,7 +133,70 @@ public class TransactionService
                     nameof(request.AccountId));
         }
 
-        var transaction = new Transaction(
+        if (request.TotalInstallments.HasValue)
+        {
+            var totalInstallments = request.TotalInstallments.Value;
+            var installmentGroupId = Guid.NewGuid();
+
+            var installmentAmount = Math.Round(
+                request.Amount / totalInstallments,
+                2,
+                MidpointRounding.AwayFromZero);
+
+            var transactions = new List<Transaction>();
+
+            for (var installmentNumber = 1;
+                 installmentNumber <= totalInstallments;
+                 installmentNumber++)
+            {
+                var amount = installmentNumber == totalInstallments
+                    ? request.Amount -
+                      (installmentAmount * (totalInstallments - 1))
+                    : installmentAmount;
+
+                var date = request.Date.AddMonths(
+                    installmentNumber - 1);
+
+                var transaction = new Transaction(
+                    userId,
+                    amount,
+                    type,
+                    paymentMethod,
+                    request.Description.Trim(),
+                    date,
+                    accountId: null,
+                    cardId: request.CardId,
+                    categoryId: request.CategoryId,
+                    installmentGroupId: installmentGroupId,
+                    installmentNumber: installmentNumber,
+                    totalInstallments: totalInstallments);
+
+                transactions.Add(transaction);
+
+                await _transactionRepository.AddAsync(
+                    transaction,
+                    cancellationToken);
+            }
+
+            await _transactionRepository.SaveChangesAsync(
+                cancellationToken);
+
+            foreach (var transaction in transactions)
+            {
+                await AssignCreditCardInvoiceAsync(
+                    transaction,
+                    card!,
+                    userId,
+                    cancellationToken);
+            }
+
+            await _transactionRepository.SaveChangesAsync(
+                cancellationToken);
+
+            return MapToResponse(transactions[0]);
+        }
+
+        var transactionSingle = new Transaction(
             userId,
             request.Amount,
             type,
@@ -118,7 +220,7 @@ public class TransactionService
         }
 
         await _transactionRepository.AddAsync(
-            transaction,
+            transactionSingle,
             cancellationToken);
 
         await _transactionRepository.SaveChangesAsync(
@@ -127,7 +229,7 @@ public class TransactionService
         if (paymentMethod == PaymentMethod.CreditCard)
         {
             await AssignCreditCardInvoiceAsync(
-                transaction,
+                transactionSingle,
                 card!,
                 userId,
                 cancellationToken);
@@ -136,7 +238,7 @@ public class TransactionService
                 cancellationToken);
         }
 
-        return MapToResponse(transaction);
+        return MapToResponse(transactionSingle);
     }
 
     public async Task<PagedResponse<TransactionListResponse>> GetAllAsync(
@@ -658,6 +760,38 @@ public class TransactionService
     {
         var userId = _currentUserService.UserId;
 
+        var installments =
+            await _transactionRepository.GetInstallmentsByGroupIdAsync(
+                installmentGroupId,
+                userId,
+                cancellationToken);
+
+        if (installments.Count == 0)
+        {
+            throw new KeyNotFoundException(
+                "Installment group not found.");
+        }
+
+        foreach (var installment in installments)
+        {
+            if (!installment.CreditCardInvoiceId.HasValue)
+                continue;
+
+            if (!installment.CardId.HasValue)
+                continue;
+
+            var invoice = await _creditCardInvoiceRepository.GetByIdAsync(
+                userId,
+                installment.CardId.Value,
+                installment.CreditCardInvoiceId.Value,
+                cancellationToken);
+
+            if (invoice is null)
+                continue;
+
+            invoice.RemoveAmount(installment.Amount);
+        }
+
         await _transactionRepository.DeleteInstallmentGroupAsync(
             installmentGroupId,
             userId,
@@ -674,31 +808,39 @@ public class TransactionService
     {
         var userId = _currentUserService.UserId;
 
-        var transaction = await _transactionRepository
-            .GetInstallmentByIdAsync(
-                id,
-                userId,
-                cancellationToken);
+        var transaction = await _transactionRepository.GetInstallmentByIdAsync(
+            id,
+            userId,
+            cancellationToken);
 
         if (transaction is null)
-        {
             throw new KeyNotFoundException(
                 "Installment transaction not found.");
-        }
 
-        var installmentGroupId = transaction.InstallmentGroupId!.Value;
-
-        var installments = await _transactionRepository
-            .GetInstallmentsByGroupIdAsync(
-                installmentGroupId,
-                userId,
-                cancellationToken);
-
-        if (installments.Count == 0)
+        if (!transaction.InstallmentGroupId.HasValue ||
+            !transaction.TotalInstallments.HasValue ||
+            !transaction.InstallmentNumber.HasValue)
         {
-            throw new KeyNotFoundException(
-                "Installment group not found.");
+            throw new ArgumentException(
+                "Transaction is not an installment.");
         }
+
+        if (request.Amount <= 0)
+        {
+            throw new ArgumentException(
+                "Amount must be greater than zero.",
+                nameof(request.Amount));
+        }
+
+        if (request.TotalInstallments <= 0)
+        {
+            throw new ArgumentException(
+                "TotalInstallments must be greater than zero.",
+                nameof(request.TotalInstallments));
+        }
+
+        var currentTotalInstallments =
+            transaction.TotalInstallments.Value;
 
         var category = await _categoryRepository.GetByIdAsync(
             request.CategoryId,
@@ -719,54 +861,171 @@ public class TransactionService
                 nameof(request.CategoryId));
         }
 
-        if (request.Amount <= 0)
+        if (!transaction.CardId.HasValue)
         {
-            throw new ArgumentException(
-                "Amount must be greater than zero.",
-                nameof(request.Amount));
+            throw new InvalidOperationException(
+                "Installment transaction must have a credit card.");
         }
 
-        if (string.IsNullOrWhiteSpace(request.Description))
+        var card = await _cardRepository.GetByIdAsync(
+            transaction.CardId.Value,
+            userId,
+            cancellationToken);
+
+        if (card is null || !card.IsActive)
         {
             throw new ArgumentException(
-                "Description is required.",
-                nameof(request.Description));
+                "Card not found or inactive.",
+                nameof(transaction.CardId));
         }
 
-        var totalInstallments = installments.Count;
+        var installments =
+            await _transactionRepository.GetInstallmentsByGroupIdAsync(
+                transaction.InstallmentGroupId.Value,
+                userId,
+                cancellationToken);
 
+        if (installments.Count != currentTotalInstallments)
+        {
+            throw new InvalidOperationException(
+                "Installment group is incomplete.");
+        }
+
+        /*
+         * Remove the current amounts from their invoices.
+         */
+        foreach (var installment in installments)
+        {
+            if (!installment.CreditCardInvoiceId.HasValue)
+                continue;
+
+            var invoice = await _creditCardInvoiceRepository.GetByIdAsync(
+                userId,
+                transaction.CardId.Value,
+                installment.CreditCardInvoiceId.Value,
+                cancellationToken);
+
+            if (invoice is null)
+                continue;
+
+            invoice.RemoveAmount(installment.Amount);
+        }
+
+        /*
+         * Update existing installments that will remain.
+         */
         var installmentAmount = Math.Round(
-            request.Amount / totalInstallments,
+            request.Amount / request.TotalInstallments,
             2,
             MidpointRounding.AwayFromZero);
 
-        foreach (var installment in installments)
-        {
-            var installmentNumber = installment.InstallmentNumber!.Value;
+        var installmentsToKeep = installments
+            .Where(installment =>
+                installment.InstallmentNumber!.Value <=
+                request.TotalInstallments)
+            .ToList();
 
-            var amount = installmentNumber == totalInstallments
+        foreach (var installment in installmentsToKeep)
+        {
+            var installmentNumber =
+                installment.InstallmentNumber!.Value;
+
+            var amount = installmentNumber == request.TotalInstallments
                 ? request.Amount -
-                  (installmentAmount * (totalInstallments - 1))
+                  (installmentAmount * (request.TotalInstallments - 1))
                 : installmentAmount;
 
             var date = request.Date.AddMonths(
                 installmentNumber - 1);
 
-            installment.Update(
+            installment.UpdateInstallment(
                 amount,
-                installment.Type,
-                installment.PaymentMethod,
                 request.Description.Trim(),
                 date,
-                installment.AccountId,
-                installment.CardId,
-                request.CategoryId);
+                request.CategoryId,
+                request.TotalInstallments);
+
+            await AssignCreditCardInvoiceAsync(
+                installment,
+                card,
+                userId,
+                cancellationToken);
+        }
+
+        /*
+         * Create installments when increasing the quantity.
+         */
+        if (request.TotalInstallments > currentTotalInstallments)
+        {
+            for (
+                var installmentNumber = currentTotalInstallments + 1;
+                installmentNumber <= request.TotalInstallments;
+                installmentNumber++)
+            {
+                var amount = installmentNumber == request.TotalInstallments
+                    ? request.Amount -
+                      (installmentAmount *
+                       (request.TotalInstallments - 1))
+                    : installmentAmount;
+
+                var date = request.Date.AddMonths(
+                    installmentNumber - 1);
+
+                var installment = new Transaction(
+                    userId,
+                    amount,
+                    TransactionType.Expense,
+                    PaymentMethod.CreditCard,
+                    request.Description.Trim(),
+                    date,
+                    accountId: null,
+                    cardId: transaction.CardId,
+                    categoryId: request.CategoryId,
+                    installmentGroupId: transaction.InstallmentGroupId,
+                    installmentNumber: installmentNumber,
+                    totalInstallments: request.TotalInstallments);
+
+                await _transactionRepository.AddAsync(
+                    installment,
+                    cancellationToken);
+
+                await AssignCreditCardInvoiceAsync(
+                    installment,
+                    card,
+                    userId,
+                    cancellationToken);
+            }
+        }
+
+        /*
+         * Remove installments when decreasing the quantity.
+         */
+        if (request.TotalInstallments < currentTotalInstallments)
+        {
+            var installmentsToDelete = installments
+                .Where(installment =>
+                    installment.InstallmentNumber!.Value >
+                    request.TotalInstallments)
+                .ToList();
+
+            foreach (var installment in installmentsToDelete)
+            {
+                await _transactionRepository.DeleteAsync(
+                    installment,
+                    cancellationToken);
+            }
         }
 
         await _transactionRepository.SaveChangesAsync(
             cancellationToken);
 
+        var updatedTransaction =
+            await _transactionRepository.GetInstallmentByIdAsync(
+                id,
+                userId,
+                cancellationToken);
+
         return MapToResponse(
-            installments.First(x => x.Id == id));
+            updatedTransaction!);
     }
 }

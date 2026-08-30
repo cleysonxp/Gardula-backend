@@ -337,6 +337,55 @@ public class Transaction
         UpdatedAt = DateTimeOffset.UtcNow;
     }
 
+    public void UpdateInstallment(
+        decimal amount,
+        string description,
+        DateTimeOffset date,
+        int categoryId,
+        int totalInstallments)
+    {
+        if (amount <= 0)
+            throw new ArgumentException(
+                "Transaction amount must be greater than zero.",
+                nameof(amount));
+
+        if (string.IsNullOrWhiteSpace(description))
+            throw new ArgumentException(
+                "Description is required.",
+                nameof(description));
+
+        if (categoryId <= 0)
+            throw new ArgumentException(
+                "CategoryId must be greater than zero.",
+                nameof(categoryId));
+
+        if (totalInstallments <= 0)
+            throw new ArgumentException(
+                "TotalInstallments must be greater than zero.",
+                nameof(totalInstallments));
+
+        if (!InstallmentGroupId.HasValue ||
+            !InstallmentNumber.HasValue ||
+            !TotalInstallments.HasValue)
+        {
+            throw new InvalidOperationException(
+                "Transaction is not an installment.");
+        }
+
+        if (InstallmentNumber.Value > totalInstallments)
+            throw new ArgumentException(
+                "InstallmentNumber cannot be greater than TotalInstallments.",
+                nameof(totalInstallments));
+
+        Amount = amount;
+        Description = description.Trim();
+        Date = date;
+        CategoryId = categoryId;
+        TotalInstallments = totalInstallments;
+
+        UpdatedAt = DateTimeOffset.UtcNow;
+    }
+
     public void AssignToCreditCardInvoicePayment(
         int creditCardInvoiceId)
     {

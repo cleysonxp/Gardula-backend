@@ -405,12 +405,6 @@ public class TransactionRepository : ITransactionRepository
                 transaction.InstallmentGroupId == installmentGroupId)
             .ToListAsync(cancellationToken);
 
-        if (transactions.Count == 0)
-        {
-            throw new KeyNotFoundException(
-                "Installment group not found.");
-        }
-
         _context.Transactions.RemoveRange(transactions);
     }
 

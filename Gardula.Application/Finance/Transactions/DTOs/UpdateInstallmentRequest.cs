@@ -4,4 +4,5 @@ public record UpdateInstallmentRequest(
     decimal Amount,
     string Description,
     DateTimeOffset Date,
-    int CategoryId);
+    int CategoryId,
+    int TotalInstallments);
