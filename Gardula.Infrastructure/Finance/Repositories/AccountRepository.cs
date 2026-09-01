@@ -60,52 +60,14 @@ public class AccountRepository : IAccountRepository
         int userId,
         CancellationToken cancellationToken = default)
     {
-        var transactionImpacts =
-            from transaction in _context.Transactions
-
-            join transfer in _context.Transfers
-                on transaction.TransferId equals transfer.Id
-                into transferGroup
-            from transfer in transferGroup.DefaultIfEmpty()
-
-            where transaction.UserId == userId
-                  && transaction.AccountId.HasValue
-
-            select new
-            {
-                AccountId = transaction.AccountId.Value,
-
-                Amount =
-                    transaction.Type == TransactionType.Income
-                        ? transaction.Amount
-                        : transaction.Type == TransactionType.Expense ||
-                          transaction.Type == TransactionType.CreditCardInvoicePayment
-                            ? -transaction.Amount
-                            : transfer.SourceAccountId == transaction.AccountId.Value
-                                ? -transaction.Amount
-                                : transfer.DestinationAccountId == transaction.AccountId.Value
-                                    ? transaction.Amount
-                                    : 0m
-            };
-
-        var balances = await (
-            from account in _context.Accounts
-
-            where account.UserId == userId
-                  && account.IsActive
-
-            join impact in transactionImpacts
-                on account.Id equals impact.AccountId
-                into impactGroup
-
-            select new AccountBalanceItem(
+        return await _context.Accounts
+            .Where(account =>
+                account.UserId == userId &&
+                account.IsActive)
+            .Select(account => new AccountBalanceItem(
                 account.Id,
-                account.InitialBalance +
-                impactGroup.Sum(x => x.Amount))
-        )
-        .ToListAsync(cancellationToken);
-
-        return balances;
+                account.CurrentBalance))
+            .ToListAsync(cancellationToken);
     }
 
     public async Task<List<AccountPeriodSummaryItem>> GetPeriodSummaryByUserIdAsync(
@@ -151,63 +113,11 @@ public class AccountRepository : IAccountRepository
         int userId,
         CancellationToken cancellationToken = default)
     {
-        var balance = await _context.Accounts
+        return await _context.Accounts
             .Where(account =>
                 account.Id == accountId &&
                 account.UserId == userId)
-            .Select(account =>
-                account.InitialBalance
-
-                + (
-                    _context.Transactions
-                        .Where(transaction =>
-                            transaction.UserId == userId &&
-                            transaction.AccountId == accountId &&
-                            transaction.Type == TransactionType.Income)
-                        .Select(transaction => (decimal?)transaction.Amount)
-                        .Sum() ?? 0m
-                )
-
-                - (
-                    _context.Transactions
-                        .Where(transaction =>
-                            transaction.UserId == userId &&
-                            transaction.AccountId == accountId &&
-                            (
-                                transaction.Type == TransactionType.Expense ||
-                                transaction.Type == TransactionType.CreditCardInvoicePayment
-                            ))
-                        .Select(transaction => (decimal?)transaction.Amount)
-                        .Sum() ?? 0m
-                )
-
-                - (
-                    _context.Transactions
-                        .Where(transaction =>
-                            transaction.UserId == userId &&
-                            transaction.AccountId == accountId &&
-                            transaction.TransferId.HasValue &&
-                            _context.Transfers.Any(transfer =>
-                                transfer.Id == transaction.TransferId.Value &&
-                                transfer.SourceAccountId == accountId))
-                        .Select(transaction => (decimal?)transaction.Amount)
-                        .Sum() ?? 0m
-                )
-
-                + (
-                    _context.Transactions
-                        .Where(transaction =>
-                            transaction.UserId == userId &&
-                            transaction.AccountId == accountId &&
-                            transaction.TransferId.HasValue &&
-                            _context.Transfers.Any(transfer =>
-                                transfer.Id == transaction.TransferId.Value &&
-                                transfer.DestinationAccountId == accountId))
-                        .Select(transaction => (decimal?)transaction.Amount)
-                        .Sum() ?? 0m
-                ))
+            .Select(account => account.CurrentBalance)
             .FirstOrDefaultAsync(cancellationToken);
-
-        return balance;
     }
 }

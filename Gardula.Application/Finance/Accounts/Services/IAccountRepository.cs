@@ -25,7 +25,7 @@ public interface IAccountRepository
         int userId,
         CancellationToken cancellationToken = default);
 
-    Task<List<AccountPeriodSummaryItem>> GetPeriodSummaryByUserIdAsync( 
+    Task<List<AccountPeriodSummaryItem>> GetPeriodSummaryByUserIdAsync(
         int userId,
         DateTimeOffset startDate,
         DateTimeOffset endDate,
