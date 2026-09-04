@@ -225,7 +225,8 @@ public class TransactionRepository : ITransactionRepository
 
         var totalTransactions = await query
             .Where(transaction =>
-                transaction.Type != TransactionType.Transfer)
+                transaction.Type != TransactionType.Transfer &&
+                transaction.Type != TransactionType.CreditCardInvoicePayment)
             .CountAsync(cancellationToken);
 
         return new TransactionSummaryResponse(
