@@ -31,6 +31,10 @@ public interface ICreditCardInvoiceRepository
         CreditCardInvoice invoice,
         CancellationToken cancellationToken = default);
 
+    Task DeleteAsync(
+        CreditCardInvoice invoice,
+        CancellationToken cancellationToken = default);
+
     Task SaveChangesAsync(
         CancellationToken cancellationToken = default);
 

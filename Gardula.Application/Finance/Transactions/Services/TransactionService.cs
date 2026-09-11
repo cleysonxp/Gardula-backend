@@ -773,6 +773,8 @@ public class TransactionService
                 "Installment group not found.");
         }
 
+        var invoices = new Dictionary<int, CreditCardInvoice>();
+
         foreach (var installment in installments)
         {
             if (!installment.CreditCardInvoiceId.HasValue)
@@ -781,22 +783,44 @@ public class TransactionService
             if (!installment.CardId.HasValue)
                 continue;
 
-            var invoice = await _creditCardInvoiceRepository.GetByIdAsync(
-                userId,
-                installment.CardId.Value,
-                installment.CreditCardInvoiceId.Value,
-                cancellationToken);
+            var invoiceId = installment.CreditCardInvoiceId.Value;
 
-            if (invoice is null)
-                continue;
+            if (!invoices.ContainsKey(invoiceId))
+            {
+                var invoice =
+                    await _creditCardInvoiceRepository.GetByIdAsync(
+                        userId,
+                        installment.CardId.Value,
+                        invoiceId,
+                        cancellationToken);
 
-            invoice.RemoveAmount(installment.Amount);
+                if (invoice is not null)
+                {
+                    invoices.Add(invoiceId, invoice);
+                }
+            }
+
+            if (invoices.TryGetValue(invoiceId, out var currentInvoice))
+            {
+                currentInvoice.RemoveAmount(installment.Amount);
+            }
         }
 
         await _transactionRepository.DeleteInstallmentGroupAsync(
             installmentGroupId,
             userId,
             cancellationToken);
+
+        foreach (var invoice in invoices.Values)
+        {
+            if (invoice.TotalAmount <= 0 &&
+                !invoice.PaidAt.HasValue)
+            {
+                await _creditCardInvoiceRepository.DeleteAsync(
+                    invoice,
+                    cancellationToken);
+            }
+        }
 
         await _transactionRepository.SaveChangesAsync(
             cancellationToken);

@@ -86,6 +86,15 @@ public class CreditCardInvoiceRepository : ICreditCardInvoiceRepository
             cancellationToken);
     }
 
+    public async Task DeleteAsync(
+        CreditCardInvoice invoice,
+        CancellationToken cancellationToken = default)
+    {
+        _context.CreditCardInvoices.Remove(invoice);
+
+        await Task.CompletedTask;
+    }
+
     public async Task SaveChangesAsync(
         CancellationToken cancellationToken = default)
     {
@@ -94,7 +103,7 @@ public class CreditCardInvoiceRepository : ICreditCardInvoiceRepository
 
     public async Task<List<CreditCardInvoice>> GetAllByUserIdAsync(
         int userId,
-    CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default)
     {
         return await _context.CreditCardInvoices
             .Where(invoice =>
