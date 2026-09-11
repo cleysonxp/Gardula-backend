@@ -366,7 +366,8 @@ public class TransactionService
             item.AccountName is not null
                 ? new AccountSummaryResponse(
                     transaction.AccountId!.Value,
-                    item.AccountName)
+                    item.AccountName,
+                    item.AccountColor)
                 : null,
 
             item.CardName is not null

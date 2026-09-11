@@ -2,4 +2,5 @@
 
 public record AccountSummaryResponse(
     int Id,
-    string Name);
+    string Name,
+    string Color);

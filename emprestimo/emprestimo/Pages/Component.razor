@@ -1,0 +1,38 @@
+﻿<h1>Simulando seu empréstimo no ByteBank</h1>
+
+<label for="valor">Valor do empréstimo (em reias) </label>
+<br />
+<input @bind="valor" type="number" />
+<br />
+
+<label for="parcelas">Número de parcelas</label>
+<br />
+<input @bind="parcelas" type="number" />
+<br />
+<br />
+
+<button @onclick="CalcularEmprestimo">Simular</button>
+<br />
+<br />
+
+<label>O total a ser pago será R$<span>@total</span></label>
+<br />
+<br />
+
+<label>Em x<span>@parcelas</span> de R$<span>@ValorDeParcelas</span></label>
+
+@code {
+    private double valor { get; set; }
+    private int parcelas { get; set; }
+
+    private double total { get; set; }
+
+    private double ValorDeParcelas { get; set; }
+
+    private void CalcularEmprestimo()
+    {
+        total = valor + (valor * (parcelas * 0.0284));
+        ValorDeParcelas = Math.Round(total / parcelas);
+    }
+
+}

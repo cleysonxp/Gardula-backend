@@ -12,7 +12,7 @@ public record TransactionDetailResponse(
     CategorySummaryResponse? Category,
     AccountSummaryResponse? Account,
     CardSummaryResponse? Card,
-    InstallmentSummaryResponse? Installment,
+    InstallmentDetailResponse? Installment,
     TransferDetailResponse? Transfer,
     DateTimeOffset CreatedAt,
     DateTimeOffset UpdatedAt);

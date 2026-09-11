@@ -10,6 +10,8 @@ public class TransactionListItem
 
     public string? AccountName { get; init; }
 
+    public string? AccountColor { get; init; }
+
     public string? CardName { get; init; }
 
     public string? CardLastFourDigits { get; init; }

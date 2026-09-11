@@ -101,9 +101,7 @@ public class TransactionRepository : ITransactionRepository
                 on transfer.DestinationAccountId equals destinationAccount.Id
                 into destinationAccountGroup
             from destinationAccount in destinationAccountGroup.DefaultIfEmpty()
-
-            orderby transaction.Date descending
-
+                        
             select new TransactionListItem
             {
                 Transaction = transaction,
@@ -114,6 +112,10 @@ public class TransactionRepository : ITransactionRepository
 
                 AccountName = account != null
                     ? account.Name
+                    : null,
+
+                AccountColor = account != null
+                    ? account.Color
                     : null,
 
                 CardName = card != null
@@ -134,6 +136,10 @@ public class TransactionRepository : ITransactionRepository
                     ? destinationAccount.Name
                     : null
             };
+
+        query = filter.SortOrder == "asc"
+            ? query.OrderBy(item => item.Transaction.Date)
+            : query.OrderByDescending(item => item.Transaction.Date);
 
         var totalItems = await query.CountAsync(cancellationToken);
 
@@ -309,6 +315,27 @@ public class TransactionRepository : ITransactionRepository
 
         var transaction = item.Transaction;
 
+        InstallmentDetailResponse? installment = null;
+
+        if (transaction.InstallmentGroupId.HasValue)
+        {
+            var installments =
+                await GetInstallmentsByGroupIdAsync(
+                    transaction.InstallmentGroupId.Value,
+                    userId,
+                    cancellationToken);
+
+            if (installments.Count > 0)
+            {
+                installment = new InstallmentDetailResponse(
+                    transaction.InstallmentGroupId.Value,
+                    transaction.InstallmentNumber!.Value,
+                    transaction.TotalInstallments!.Value,
+                    installments.Sum(item => item.Amount),
+                    installments.Min(item => item.Date));
+            }
+        }
+
         return new TransactionDetailResponse(
             transaction.Id,
             transaction.Description,
@@ -328,7 +355,8 @@ public class TransactionRepository : ITransactionRepository
             item.Account is not null
                 ? new AccountSummaryResponse(
                     item.Account.Id,
-                    item.Account.Name)
+                    item.Account.Name,
+                    item.Account.Color)
                 : null,
 
             item.Card is not null
@@ -338,12 +366,7 @@ public class TransactionRepository : ITransactionRepository
                     item.Card.LastFourDigits)
                 : null,
 
-            transaction.InstallmentGroupId.HasValue
-                ? new InstallmentSummaryResponse(
-                    transaction.InstallmentGroupId.Value,
-                    transaction.InstallmentNumber!.Value,
-                    transaction.TotalInstallments!.Value)
-                : null,
+            installment,
 
             item.Transfer is not null &&
             item.SourceAccount is not null &&
@@ -352,10 +375,12 @@ public class TransactionRepository : ITransactionRepository
                     item.Transfer.Id,
                     new AccountSummaryResponse(
                         item.SourceAccount.Id,
-                        item.SourceAccount.Name),
+                        item.SourceAccount.Name,
+                        item.SourceAccount.Color),
                     new AccountSummaryResponse(
                         item.DestinationAccount.Id,
-                        item.DestinationAccount.Name))
+                        item.DestinationAccount.Name,
+                        item.DestinationAccount.Color))
                 : null,
 
             transaction.CreatedAt,

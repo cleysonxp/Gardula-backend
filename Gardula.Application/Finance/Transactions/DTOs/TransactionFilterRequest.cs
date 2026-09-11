@@ -10,5 +10,6 @@ public record TransactionFilterRequest(
     int? CardId = null,
     TransactionType? Type = null,
     string? Search = null,
+    string SortOrder = "desc",
     int Page = 1,
     int PageSize = 20);
