@@ -114,7 +114,8 @@ public class AccountService
 
         account.Update(
             request.Name.Trim(),
-            (AccountType)request.Type);
+            (AccountType)request.Type,
+            request.Color.Trim());
 
         await _accountRepository.SaveChangesAsync(
             cancellationToken);

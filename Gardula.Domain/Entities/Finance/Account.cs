@@ -74,15 +74,22 @@ public class Account
 
     public void Update(
         string name,
-        AccountType type)
+        AccountType type,
+        string color)
     {
         if (string.IsNullOrWhiteSpace(name))
             throw new ArgumentException(
                 "Name is required.",
                 nameof(name));
 
+        if (!AllowedColors.Contains(color))
+            throw new ArgumentException(
+                "Invalid account color.",
+                nameof(color));
+
         Name = name;
         Type = type;
+        Color = color;
         UpdatedAt = DateTimeOffset.UtcNow;
     }
 

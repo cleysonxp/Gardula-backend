@@ -2,4 +2,5 @@
 
 public record UpdateAccountRequest(
     string Name,
-    int Type);
+    int Type,
+    string Color);
