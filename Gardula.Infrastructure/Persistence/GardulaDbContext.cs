@@ -30,6 +30,8 @@ public class GardulaDbContext : DbContext
 
     public DbSet<Transfer> Transfers => Set<Transfer>();
 
+    public DbSet<MonthlyBudget> MonthlyBudgets => Set<MonthlyBudget>();
+
     public DbSet<CreditCardInvoicePayment> CreditCardInvoicePayments => Set<CreditCardInvoicePayment>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
