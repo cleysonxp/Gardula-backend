@@ -2,6 +2,7 @@
 using Gardula.Application.Finance.Accounts.Services;
 using Gardula.Application.Finance.Cards.Services;
 using Gardula.Application.Finance.Categories.Services;
+using Gardula.Application.Finance.Planning.Services;
 using Gardula.Application.Finance.Transactions.Services;
 using Gardula.Application.Finance.Transfers.Services;
 using Gardula.Infrastructure.Authentication.Configuration;
@@ -65,6 +66,7 @@ public static class DependencyInjection
         services.AddScoped<ITransferRepository, TransferRepository>();
         services.AddScoped<ICreditCardInvoiceRepository, CreditCardInvoiceRepository>();
         services.AddScoped<ICreditCardInvoicePaymentRepository, CreditCardInvoicePaymentRepository>();
+        services.AddScoped<IMonthlyBudgetRepository, MonthlyBudgetRepository>();
 
         services.AddScoped<ITokenService, JwtTokenService>();
 

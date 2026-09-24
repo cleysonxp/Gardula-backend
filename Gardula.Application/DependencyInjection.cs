@@ -2,6 +2,7 @@
 using Gardula.Application.Finance.Accounts.Services;
 using Gardula.Application.Finance.Cards.Services;
 using Gardula.Application.Finance.Categories.Services;
+using Gardula.Application.Finance.Planning;
 using Gardula.Application.Finance.Transactions.Services;
 using Gardula.Application.Finance.Transfers.Services;
 using Microsoft.Extensions.DependencyInjection;
@@ -25,6 +26,7 @@ public static class DependencyInjection
         services.AddScoped<TransactionService>();
         services.AddScoped<TransferService>();
         services.AddScoped<CreditCardInvoicePaymentService>();
+        services.AddScoped<MonthlyBudgetService>();
 
         return services;
     }
