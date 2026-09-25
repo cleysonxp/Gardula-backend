@@ -4,6 +4,7 @@ using Gardula.Application.Finance.Transactions.Services;
 using Gardula.Domain.Entities.Finance;
 using Gardula.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
+using Gardula.Application.Finance.Planning.DTOs;
 
 namespace Gardula.Infrastructure.Finance.Repositories;
 
@@ -240,6 +241,47 @@ public class TransactionRepository : ITransactionRepository
             totalExpense,
             totalIncome - totalExpense,
             totalTransactions);
+    }
+
+    public async Task<List<CategorySpendingItem>> GetCategorySpendingAsync(
+        int userId,
+        TransactionFilterRequest filter,
+        CancellationToken cancellationToken = default)
+    {
+        var query = _context.Transactions
+            .Where(transaction =>
+                transaction.UserId == userId &&
+                transaction.Type == TransactionType.Expense);
+
+        if (filter.StartDate.HasValue)
+        {
+            query = query.Where(transaction =>
+                transaction.Date >= filter.StartDate.Value);
+        }
+
+        if (filter.EndDate.HasValue)
+        {
+            query = query.Where(transaction =>
+                transaction.Date <= filter.EndDate.Value);
+        }
+
+        return await (
+            from transaction in query
+            join category in _context.Categories
+                on transaction.CategoryId equals category.Id
+            group transaction by new
+            {
+                category.Id,
+                category.Name
+            }
+            into categoryGroup
+            select new CategorySpendingItem(
+                categoryGroup.Key.Id,
+                categoryGroup.Key.Name,
+                categoryGroup.Sum(transaction => transaction.Amount))
+        )
+        .OrderByDescending(item => item.Amount)
+        .ToListAsync(cancellationToken);
     }
 
     public async Task<Transaction?> GetByIdAsync(

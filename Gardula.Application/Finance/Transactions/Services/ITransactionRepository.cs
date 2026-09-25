@@ -1,6 +1,7 @@
 ﻿using Gardula.Application.Finance.Transactions.DTOs;
 using Gardula.Application.Common.DTOs;
 using Gardula.Domain.Entities.Finance;
+using Gardula.Application.Finance.Planning.DTOs;
 
 namespace Gardula.Application.Finance.Transactions.Services;
 
@@ -64,6 +65,11 @@ public interface ITransactionRepository
     Task DeleteByTransferIdAsync(
         int transferId,
         int userId,
+        CancellationToken cancellationToken = default);
+
+    Task<List<CategorySpendingItem>> GetCategorySpendingAsync(
+        int userId,
+        TransactionFilterRequest filter,
         CancellationToken cancellationToken = default);
 
 }
