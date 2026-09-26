@@ -9,15 +9,18 @@ public class PlanningService
 {
     private readonly IMonthlyBudgetRepository _monthlyBudgetRepository;
     private readonly ITransactionRepository _transactionRepository;
+    private readonly IFinancialGoalRepository _financialGoalRepository;
     private readonly ICurrentUserService _currentUserService;
 
     public PlanningService(
         IMonthlyBudgetRepository monthlyBudgetRepository,
         ITransactionRepository transactionRepository,
+        IFinancialGoalRepository financialGoalRepository,
         ICurrentUserService currentUserService)
     {
         _monthlyBudgetRepository = monthlyBudgetRepository;
         _transactionRepository = transactionRepository;
+        _financialGoalRepository = financialGoalRepository;
         _currentUserService = currentUserService;
     }
 
@@ -74,6 +77,10 @@ public class PlanningService
                 filter,
                 cancellationToken);
 
+        var goals = await _financialGoalRepository.GetAllByUserIdAsync(
+            userId,
+            cancellationToken);
+
         var spent = summary.TotalExpense;
 
         var available = budget.Amount - spent;
@@ -124,6 +131,11 @@ public class PlanningService
             }
         }
 
+        var totalGoals = goals.Count;
+
+        var activeGoals = goals.Count(goal =>
+            goal.CurrentAmount < goal.TargetAmount);
+
         return new PlanningOverviewResponse(
             year,
             month,
@@ -137,7 +149,7 @@ public class PlanningService
                 available,
                 remainingDays,
                 dailyAverage,
-                0,
-                0));
+                activeGoals,
+                totalGoals));
     }
 }

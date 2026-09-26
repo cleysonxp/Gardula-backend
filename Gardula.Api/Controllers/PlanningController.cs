@@ -13,13 +13,38 @@ public class PlanningController : ControllerBase
 {
     private readonly MonthlyBudgetService _monthlyBudgetService;
     private readonly FinancialGoalService _financialGoalService;
+    private readonly PlanningService _planningService;
 
     public PlanningController(
         MonthlyBudgetService monthlyBudgetService,
-        FinancialGoalService financialGoalService)
+        FinancialGoalService financialGoalService,
+        PlanningService planningService)
     {
         _monthlyBudgetService = monthlyBudgetService;
         _financialGoalService = financialGoalService;
+        _planningService = planningService;
+    }
+
+    [HttpGet("overview")]
+    [ProducesResponseType(
+        typeof(PlanningOverviewResponse),
+        StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<PlanningOverviewResponse>> GetOverview(
+        [FromQuery] int year,
+        [FromQuery] int month,
+        CancellationToken cancellationToken)
+    {
+        var response = await _planningService.GetOverviewAsync(
+            year,
+            month,
+            cancellationToken);
+
+        if (response is null)
+            return NotFound();
+
+        return Ok(response);
     }
 
     [HttpGet("budget")]

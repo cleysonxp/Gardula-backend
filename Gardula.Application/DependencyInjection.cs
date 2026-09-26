@@ -29,6 +29,7 @@ public static class DependencyInjection
         services.AddScoped<CreditCardInvoicePaymentService>();
         services.AddScoped<MonthlyBudgetService>();
         services.AddScoped<FinancialGoalService>();
+        services.AddScoped<PlanningService>();
 
         return services;
     }

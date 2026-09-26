@@ -265,7 +265,7 @@ public class TransactionRepository : ITransactionRepository
                 transaction.Date <= filter.EndDate.Value);
         }
 
-        return await (
+        var result = await (
             from transaction in query
             join category in _context.Categories
                 on transaction.CategoryId equals category.Id
@@ -275,13 +275,22 @@ public class TransactionRepository : ITransactionRepository
                 category.Name
             }
             into categoryGroup
-            select new CategorySpendingItem(
-                categoryGroup.Key.Id,
-                categoryGroup.Key.Name,
-                categoryGroup.Sum(transaction => transaction.Amount))
-        )
-        .OrderByDescending(item => item.Amount)
-        .ToListAsync(cancellationToken);
+            select new
+            {
+                CategoryId = categoryGroup.Key.Id,
+                CategoryName = categoryGroup.Key.Name,
+                Amount = categoryGroup.Sum(
+                    transaction => transaction.Amount)
+            })
+            .OrderByDescending(item => item.Amount)
+            .ToListAsync(cancellationToken);
+
+        return result
+            .Select(item => new CategorySpendingItem(
+                item.CategoryId,
+                item.CategoryName,
+                item.Amount))
+            .ToList();
     }
 
     public async Task<Transaction?> GetByIdAsync(
