@@ -1,10 +1,9 @@
 ﻿using Gardula.Application.Common.Services;
 using Gardula.Application.Finance.Planning.DTOs;
-using Gardula.Application.Finance.Planning.Services;
 using Gardula.Application.Finance.Transactions.DTOs;
 using Gardula.Application.Finance.Transactions.Services;
 
-namespace Gardula.Application.Finance.Planning;
+namespace Gardula.Application.Finance.Planning.Services;
 
 public class PlanningService
 {
@@ -93,6 +92,38 @@ public class PlanningService
                     : 0))
             .ToList();
 
+        var now = DateTimeOffset.UtcNow;
+
+        var remainingDays = 0;
+
+        if (year > now.Year ||
+            (year == now.Year && month > now.Month))
+        {
+            remainingDays = DateTime.DaysInMonth(year, month);
+        }
+        else if (year == now.Year && month == now.Month)
+        {
+            remainingDays = DateTime.DaysInMonth(year, month)
+                - now.Day;
+        }
+
+        var dailyAverage = 0m;
+
+        if (spent > 0)
+        {
+            if (year < now.Year ||
+                (year == now.Year && month < now.Month))
+            {
+                var daysInMonth = DateTime.DaysInMonth(year, month);
+
+                dailyAverage = spent / daysInMonth;
+            }
+            else if (year == now.Year && month == now.Month)
+            {
+                dailyAverage = spent / now.Day;
+            }
+        }
+
         return new PlanningOverviewResponse(
             year,
             month,
@@ -104,8 +135,8 @@ public class PlanningService
             categories,
             new PlanningSummaryResponse(
                 available,
-                0,
-                0,
+                remainingDays,
+                dailyAverage,
                 0,
                 0));
     }

@@ -32,6 +32,8 @@ public class GardulaDbContext : DbContext
 
     public DbSet<MonthlyBudget> MonthlyBudgets => Set<MonthlyBudget>();
 
+    public DbSet<FinancialGoal> FinancialGoals => Set<FinancialGoal>();
+
     public DbSet<CreditCardInvoicePayment> CreditCardInvoicePayments => Set<CreditCardInvoicePayment>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)

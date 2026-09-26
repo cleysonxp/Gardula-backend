@@ -67,6 +67,7 @@ public static class DependencyInjection
         services.AddScoped<ICreditCardInvoiceRepository, CreditCardInvoiceRepository>();
         services.AddScoped<ICreditCardInvoicePaymentRepository, CreditCardInvoicePaymentRepository>();
         services.AddScoped<IMonthlyBudgetRepository, MonthlyBudgetRepository>();
+        services.AddScoped<IFinancialGoalRepository, FinancialGoalRepository>();
 
         services.AddScoped<ITokenService, JwtTokenService>();
 
