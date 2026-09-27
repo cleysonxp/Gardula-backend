@@ -10,6 +10,12 @@ public interface IMonthlyBudgetRepository
         int month,
         CancellationToken cancellationToken = default);
 
+    Task<MonthlyBudget?> GetLatestByUserIdAndPeriodAsync(
+        int userId,
+        int year,
+        int month,
+        CancellationToken cancellationToken = default);
+
     Task AddAsync(
         MonthlyBudget budget,
         CancellationToken cancellationToken = default);

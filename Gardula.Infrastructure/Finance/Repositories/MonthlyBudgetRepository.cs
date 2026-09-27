@@ -29,6 +29,27 @@ public class MonthlyBudgetRepository : IMonthlyBudgetRepository
                 cancellationToken);
     }
 
+    public async Task<MonthlyBudget?> GetLatestByUserIdAndPeriodAsync(
+        int userId,
+        int year,
+        int month,
+        CancellationToken cancellationToken = default)
+    {
+        return await _context.MonthlyBudgets
+            .Where(budget =>
+                budget.UserId == userId &&
+                (
+                    budget.Year < year ||
+                    (
+                        budget.Year == year &&
+                        budget.Month <= month
+                    )
+                ))
+            .OrderByDescending(budget => budget.Year)
+            .ThenByDescending(budget => budget.Month)
+            .FirstOrDefaultAsync(cancellationToken);
+    }
+
     public async Task AddAsync(
         MonthlyBudget budget,
         CancellationToken cancellationToken = default)

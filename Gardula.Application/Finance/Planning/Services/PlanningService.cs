@@ -32,7 +32,7 @@ public class PlanningService
         var userId = _currentUserService.UserId;
 
         var budget =
-            await _monthlyBudgetRepository.GetByUserIdAndPeriodAsync(
+            await _monthlyBudgetRepository.GetLatestByUserIdAndPeriodAsync(
                 userId,
                 year,
                 month,
