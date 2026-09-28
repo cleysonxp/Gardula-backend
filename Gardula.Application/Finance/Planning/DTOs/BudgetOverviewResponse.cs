@@ -4,4 +4,5 @@ public record BudgetOverviewResponse(
     decimal Amount,
     decimal Spent,
     decimal Available,
-    decimal PercentageUsed);
+    decimal PercentageUsed,
+    bool IsInherited);

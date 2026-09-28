@@ -41,6 +41,10 @@ public class PlanningService
         if (budget is null)
             return null;
 
+        var isInherited =
+            budget.Year != year ||
+            budget.Month != month;
+
         var startDate = new DateTimeOffset(
             year,
             month,
@@ -143,7 +147,8 @@ public class PlanningService
                 budget.Amount,
                 spent,
                 available,
-                percentageUsed),
+                percentageUsed,
+                isInherited),
             categories,
             new PlanningSummaryResponse(
                 available,
