@@ -119,6 +119,27 @@ public class FinancialGoalService
         return MapToResponse(goal);
     }
 
+    public async Task<bool> DeleteAsync(
+        int id,
+        CancellationToken cancellationToken = default)
+    {
+        var userId = _currentUserService.UserId;
+
+        var goal = await _financialGoalRepository.GetByIdAsync(
+            id,
+            userId,
+            cancellationToken);
+
+        if (goal is null)
+            return false;
+
+        await _financialGoalRepository.DeleteAsync(
+            goal,
+            cancellationToken);
+
+        return true;
+    }
+
     private static FinancialGoalResponse MapToResponse(
         Domain.Entities.Finance.FinancialGoal goal)
     {

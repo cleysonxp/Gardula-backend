@@ -17,6 +17,10 @@ public interface IFinancialGoalRepository
         FinancialGoal goal,
         CancellationToken cancellationToken = default);
 
+    Task DeleteAsync(
+        FinancialGoal goal,
+        CancellationToken cancellationToken = default);
+
     Task SaveChangesAsync(
         CancellationToken cancellationToken = default);
 }

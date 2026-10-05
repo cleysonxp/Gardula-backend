@@ -170,6 +170,24 @@ public class PlanningController : ControllerBase
             response);
     }
 
+    [HttpDelete("goals/{id:int}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> DeleteGoal(
+        int id,
+        CancellationToken cancellationToken)
+    {
+        var deleted = await _financialGoalService.DeleteAsync(
+            id,
+            cancellationToken);
+
+        if (!deleted)
+            return NotFound();
+
+        return NoContent();
+    }
+
     [HttpPut("goals/{id:int}")]
     [ProducesResponseType(
         typeof(FinancialGoalResponse),

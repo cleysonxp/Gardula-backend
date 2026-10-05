@@ -48,6 +48,15 @@ public class FinancialGoalRepository : IFinancialGoalRepository
         await _context.SaveChangesAsync(cancellationToken);
     }
 
+    public async Task DeleteAsync(
+        FinancialGoal goal,
+        CancellationToken cancellationToken = default)
+    {
+        _context.FinancialGoals.Remove(goal);
+
+        await _context.SaveChangesAsync(cancellationToken);
+    }
+
     public async Task SaveChangesAsync(
         CancellationToken cancellationToken = default)
     {
