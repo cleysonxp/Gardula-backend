@@ -6,6 +6,7 @@ using Gardula.Application.Finance.Planning;
 using Gardula.Application.Finance.Planning.Services;
 using Gardula.Application.Finance.Transactions.Services;
 using Gardula.Application.Finance.Transfers.Services;
+using Gardula.Application.Finance.Home.Services;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Gardula.Application;
@@ -30,6 +31,7 @@ public static class DependencyInjection
         services.AddScoped<MonthlyBudgetService>();
         services.AddScoped<FinancialGoalService>();
         services.AddScoped<PlanningService>();
+        services.AddScoped<HomeService>();
 
         return services;
     }
