@@ -163,4 +163,14 @@ public class CardService
             card.CreatedAt,
             card.UpdatedAt);
     }
+
+    public async Task<List<CardUsedLimitResponse>> GetUsedLimitsAsync(
+        CancellationToken cancellationToken = default)
+    {
+        var userId = _currentUserService.UserId;
+
+        return await _cardRepository.GetUsedLimitsByUserIdAsync(
+            userId,
+            cancellationToken);
+    }
 }

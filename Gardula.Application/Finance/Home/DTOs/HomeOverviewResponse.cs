@@ -13,5 +13,6 @@ public record HomeOverviewResponse(
     List<CategorySpendingResponse> CategorySpending,
     List<FinancialGoalResponse> Goals,
     CardOverviewResponse Cards,
+    List<HomeCardResponse> CardItems,
     List<TransactionListResponse> RecentTransactions
 );

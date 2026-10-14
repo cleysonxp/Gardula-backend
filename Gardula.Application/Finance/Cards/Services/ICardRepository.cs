@@ -24,4 +24,8 @@ public interface ICardRepository
     Task<CardOverviewResponse> GetOverviewByUserIdAsync(
         int userId,
         CancellationToken cancellationToken = default);
+
+    Task<List<CardUsedLimitResponse>> GetUsedLimitsByUserIdAsync(
+        int userId,
+        CancellationToken cancellationToken = default);
 }

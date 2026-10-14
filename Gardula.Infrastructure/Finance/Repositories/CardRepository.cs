@@ -102,4 +102,35 @@ public class CardRepository : ICardRepository
             totalUsedLimit,
             totalAvailableLimit);
     }
+
+    public async Task<List<CardUsedLimitResponse>> GetUsedLimitsByUserIdAsync(
+        int userId,
+        CancellationToken cancellationToken = default)
+    {
+        var usedLimits = await (
+            from transaction in _context.Transactions
+
+            join invoice in _context.CreditCardInvoices
+                on transaction.CreditCardInvoiceId equals invoice.Id
+
+            join card in _context.Cards
+                on transaction.CardId equals card.Id
+
+            where transaction.UserId == userId
+                  && transaction.CardId.HasValue
+                  && card.UserId == userId
+                  && card.IsActive
+                  && invoice.UserId == userId
+                  && invoice.Status != CreditCardInvoiceStatus.Paid
+                  && transaction.Type != TransactionType.CreditCardInvoicePayment
+
+            group transaction by transaction.CardId!.Value into cardTransactions
+
+            select new CardUsedLimitResponse(
+                cardTransactions.Key,
+                cardTransactions.Sum(transaction => transaction.Amount))
+        ).ToListAsync(cancellationToken);
+
+        return usedLimits;
+    }
 }
