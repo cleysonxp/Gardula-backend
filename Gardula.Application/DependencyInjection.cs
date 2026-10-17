@@ -8,6 +8,7 @@ using Gardula.Application.Finance.Transactions.Services;
 using Gardula.Application.Finance.Transfers.Services;
 using Gardula.Application.Finance.Home.Services;
 using Microsoft.Extensions.DependencyInjection;
+using Gardula.Application.Finance.RecurringTransactions.Services;
 
 namespace Gardula.Application;
 
@@ -32,6 +33,7 @@ public static class DependencyInjection
         services.AddScoped<FinancialGoalService>();
         services.AddScoped<PlanningService>();
         services.AddScoped<HomeService>();
+        services.AddScoped<RecurringTransactionService>();
 
         return services;
     }

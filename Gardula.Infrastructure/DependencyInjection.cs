@@ -9,6 +9,7 @@ using Gardula.Infrastructure.Authentication.Configuration;
 using Gardula.Infrastructure.Authentication.Repositories;
 using Gardula.Infrastructure.Authentication.Services;
 using Gardula.Infrastructure.Finance.Repositories;
+using Gardula.Application.Finance.RecurringTransactions.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -68,6 +69,7 @@ public static class DependencyInjection
         services.AddScoped<ICreditCardInvoicePaymentRepository, CreditCardInvoicePaymentRepository>();
         services.AddScoped<IMonthlyBudgetRepository, MonthlyBudgetRepository>();
         services.AddScoped<IFinancialGoalRepository, FinancialGoalRepository>();
+        services.AddScoped<IRecurringTransactionRepository, RecurringTransactionRepository>();
 
         services.AddScoped<ITokenService, JwtTokenService>();
 

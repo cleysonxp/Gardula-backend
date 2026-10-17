@@ -36,6 +36,8 @@ public class GardulaDbContext : DbContext
 
     public DbSet<CreditCardInvoicePayment> CreditCardInvoicePayments => Set<CreditCardInvoicePayment>();
 
+    public DbSet<RecurringTransaction> RecurringTransactions => Set<RecurringTransaction>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);

@@ -1403,6 +1403,72 @@ namespace Gardula.Infrastructure.Migrations
                     b.ToTable("MonthlyBudgets", (string)null);
                 });
 
+            modelBuilder.Entity("Gardula.Domain.Entities.Finance.RecurringTransaction", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int?>("AccountId")
+                        .HasColumnType("int");
+
+                    b.Property<decimal>("Amount")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<int?>("CardId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("CategoryId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<int>("DueDay")
+                        .HasColumnType("int");
+
+                    b.Property<DateTimeOffset?>("EndDate")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("tinyint(1)");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("varchar(100)");
+
+                    b.Property<int>("PaymentMethod")
+                        .HasColumnType("int");
+
+                    b.Property<DateTimeOffset>("StartDate")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<int>("Type")
+                        .HasColumnType("int");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AccountId");
+
+                    b.HasIndex("CardId");
+
+                    b.HasIndex("CategoryId");
+
+                    b.HasIndex("UserId", "IsActive");
+
+                    b.ToTable("RecurringTransactions", (string)null);
+                });
+
             modelBuilder.Entity("Gardula.Domain.Entities.Finance.Transaction", b =>
                 {
                     b.Property<int>("Id")
@@ -1616,6 +1682,31 @@ namespace Gardula.Infrastructure.Migrations
 
             modelBuilder.Entity("Gardula.Domain.Entities.Finance.MonthlyBudget", b =>
                 {
+                    b.HasOne("Gardula.Domain.Entities.Authentication.User", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Gardula.Domain.Entities.Finance.RecurringTransaction", b =>
+                {
+                    b.HasOne("Gardula.Domain.Entities.Finance.Account", null)
+                        .WithMany()
+                        .HasForeignKey("AccountId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("Gardula.Domain.Entities.Finance.Card", null)
+                        .WithMany()
+                        .HasForeignKey("CardId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("Gardula.Domain.Entities.Finance.Category", null)
+                        .WithMany()
+                        .HasForeignKey("CategoryId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
                     b.HasOne("Gardula.Domain.Entities.Authentication.User", null)
                         .WithMany()
                         .HasForeignKey("UserId")
