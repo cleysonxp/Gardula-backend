@@ -1,5 +1,4 @@
-﻿
-using Gardula.Application.Common.Services;
+﻿using Gardula.Application.Common.Services;
 using Gardula.Application.Finance.Accounts.Services;
 using Gardula.Application.Finance.Cards.Services;
 using Gardula.Application.Finance.Categories.Services;
@@ -39,9 +38,16 @@ public class RecurringTransactionService
             userId,
             cancellationToken);
 
-        return recurringTransactions
-            .Select(MapToResponse)
-            .ToList();
+        var responses = new List<RecurringTransactionResponse>();
+
+        foreach (var recurringTransaction in recurringTransactions)
+        {
+            responses.Add(await MapToResponseAsync(
+                recurringTransaction,
+                cancellationToken));
+        }
+
+        return responses;
     }
 
     public async Task<RecurringTransactionResponse?> GetByIdAsync(
@@ -55,9 +61,12 @@ public class RecurringTransactionService
             userId,
             cancellationToken);
 
-        return recurringTransaction is null
-            ? null
-            : MapToResponse(recurringTransaction);
+        if (recurringTransaction is null)
+            return null;
+
+        return await MapToResponseAsync(
+            recurringTransaction,
+            cancellationToken);
     }
 
     public async Task<RecurringTransactionResponse> CreateAsync(
@@ -66,7 +75,9 @@ public class RecurringTransactionService
     {
         var userId = _currentUserService.UserId;
 
-        ValidateRequestEnums(request.Type, request.PaymentMethod);
+        ValidateRequestEnums(
+            request.Type,
+            request.PaymentMethod);
 
         await ValidateReferencesAsync(
             userId,
@@ -94,7 +105,9 @@ public class RecurringTransactionService
             recurringTransaction,
             cancellationToken);
 
-        return MapToResponse(recurringTransaction);
+        return await MapToResponseAsync(
+            recurringTransaction,
+            cancellationToken);
     }
 
     public async Task<RecurringTransactionResponse?> UpdateAsync(
@@ -112,7 +125,9 @@ public class RecurringTransactionService
         if (recurringTransaction is null)
             return null;
 
-        ValidateRequestEnums(request.Type, request.PaymentMethod);
+        ValidateRequestEnums(
+            request.Type,
+            request.PaymentMethod);
 
         await ValidateReferencesAsync(
             userId,
@@ -137,7 +152,9 @@ public class RecurringTransactionService
 
         await _repository.SaveChangesAsync(cancellationToken);
 
-        return MapToResponse(recurringTransaction);
+        return await MapToResponseAsync(
+            recurringTransaction,
+            cancellationToken);
     }
 
     public async Task<bool> DeactivateAsync(
@@ -182,6 +199,27 @@ public class RecurringTransactionService
         return true;
     }
 
+    public async Task<bool> DeleteAsync(
+        int id,
+        CancellationToken cancellationToken = default)
+    {
+        var userId = _currentUserService.UserId;
+
+        var recurringTransaction = await _repository.GetByIdAsync(
+            id,
+            userId,
+            cancellationToken);
+
+        if (recurringTransaction is null)
+            return false;
+
+        await _repository.DeleteAsync(
+            recurringTransaction,
+            cancellationToken);
+
+        return true;
+    }
+
     private async Task ValidateReferencesAsync(
         int userId,
         TransactionType type,
@@ -197,24 +235,30 @@ public class RecurringTransactionService
             cancellationToken);
 
         if (category is null)
+        {
             throw new ArgumentException(
                 "Category not found or inactive.",
                 nameof(categoryId));
+        }
 
         var expectedCategoryType = type == TransactionType.Income
             ? CategoryType.Income
             : CategoryType.Expense;
 
         if (category.Type != expectedCategoryType)
+        {
             throw new ArgumentException(
                 "Category type must match the recurring transaction type.",
                 nameof(categoryId));
+        }
 
         if (paymentMethod == PaymentMethod.CreditCard)
         {
             if (!cardId.HasValue || accountId.HasValue)
+            {
                 throw new ArgumentException(
                     "Credit card payments require CardId and must not include AccountId.");
+            }
 
             var card = await _cardRepository.GetByIdAsync(
                 cardId.Value,
@@ -222,16 +266,20 @@ public class RecurringTransactionService
                 cancellationToken);
 
             if (card is null || !card.IsActive)
+            {
                 throw new ArgumentException(
                     "Card not found or inactive.",
                     nameof(cardId));
+            }
 
             return;
         }
 
         if (!accountId.HasValue || cardId.HasValue)
+        {
             throw new ArgumentException(
                 "This payment method requires AccountId and must not include CardId.");
+        }
 
         var account = await _accountRepository.GetByIdAsync(
             accountId.Value,
@@ -239,9 +287,11 @@ public class RecurringTransactionService
             cancellationToken);
 
         if (account is null || !account.IsActive)
+        {
             throw new ArgumentException(
                 "Account not found or inactive.",
-                nameof(accountId)); ;
+                nameof(accountId));
+        }
     }
 
     private static void ValidateRequestEnums(
@@ -268,18 +318,51 @@ public class RecurringTransactionService
         }
     }
 
-    private static RecurringTransactionResponse MapToResponse(
-        RecurringTransaction recurringTransaction)
+    private async Task<RecurringTransactionResponse> MapToResponseAsync(
+        RecurringTransaction recurringTransaction,
+        CancellationToken cancellationToken = default)
     {
+        var userId = _currentUserService.UserId;
+
+        var category = await _categoryRepository.GetByIdAsync(
+            recurringTransaction.CategoryId,
+            userId,
+            cancellationToken);
+
+        string? accountName = null;
+        string? cardName = null;
+
+        if (recurringTransaction.CardId.HasValue)
+        {
+            var card = await _cardRepository.GetByIdAsync(
+                recurringTransaction.CardId.Value,
+                userId,
+                cancellationToken);
+
+            cardName = card?.Name;
+        }
+        else if (recurringTransaction.AccountId.HasValue)
+        {
+            var account = await _accountRepository.GetByIdAsync(
+                recurringTransaction.AccountId.Value,
+                userId,
+                cancellationToken);
+
+            accountName = account?.Name;
+        }
+
         return new RecurringTransactionResponse(
             recurringTransaction.Id,
             recurringTransaction.Name,
             (int)recurringTransaction.Type,
             recurringTransaction.Amount,
             recurringTransaction.CategoryId,
+            category?.Name ?? string.Empty,
             (int)recurringTransaction.PaymentMethod,
             recurringTransaction.AccountId,
+            accountName,
             recurringTransaction.CardId,
+            cardName,
             recurringTransaction.DueDay,
             recurringTransaction.StartDate,
             recurringTransaction.EndDate,
@@ -287,27 +370,4 @@ public class RecurringTransactionService
             recurringTransaction.CreatedAt,
             recurringTransaction.UpdatedAt);
     }
-
-    public async Task<bool> DeleteAsync(
-        int id,
-        CancellationToken cancellationToken = default)
-    {
-        var userId = _currentUserService.UserId;
-
-        var recurringTransaction = await _repository.GetByIdAsync(
-            id,
-            userId,
-            cancellationToken);
-
-        if (recurringTransaction is null)
-            return false;
-
-        await _repository.DeleteAsync(
-            recurringTransaction,
-            cancellationToken);
-
-        return true;
-    }
-
-
 }
