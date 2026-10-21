@@ -1,7 +1,8 @@
-﻿using Gardula.Application.Finance.Transactions.DTOs;
-using Gardula.Application.Common.DTOs;
-using Gardula.Domain.Entities.Finance;
+﻿using Gardula.Application.Common.DTOs;
 using Gardula.Application.Finance.Planning.DTOs;
+using Gardula.Application.Finance.Reports.DTOs;
+using Gardula.Application.Finance.Transactions.DTOs;
+using Gardula.Domain.Entities.Finance;
 
 namespace Gardula.Application.Finance.Transactions.Services;
 
@@ -68,6 +69,11 @@ public interface ITransactionRepository
         CancellationToken cancellationToken = default);
 
     Task<List<CategorySpendingItem>> GetCategorySpendingAsync(
+        int userId,
+        TransactionFilterRequest filter,
+        CancellationToken cancellationToken = default);
+
+    Task<List<MonthlyEvolutionResponse>> GetMonthlyEvolutionAsync(
         int userId,
         TransactionFilterRequest filter,
         CancellationToken cancellationToken = default);

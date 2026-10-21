@@ -1,5 +1,4 @@
-﻿
-namespace Gardula.Application.Finance.RecurringTransactions.DTOs;
+﻿namespace Gardula.Application.Finance.RecurringTransactions.DTOs;
 
 public record CreateRecurringTransactionRequest(
     string Name,

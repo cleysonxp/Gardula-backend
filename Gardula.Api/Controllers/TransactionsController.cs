@@ -170,7 +170,7 @@ public class TransactionsController : ControllerBase
 
     [HttpPut("{id:int}/installment")]
     [ProducesResponseType(
-    typeof(TransactionResponse),
+        typeof(TransactionResponse),
     StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]

@@ -1,10 +1,11 @@
-﻿using Gardula.Application.Finance.Transactions.DTOs;
-using Gardula.Application.Common.DTOs;
+﻿using Gardula.Application.Common.DTOs;
+using Gardula.Application.Finance.Planning.DTOs;
+using Gardula.Application.Finance.Reports.DTOs;
+using Gardula.Application.Finance.Transactions.DTOs;
 using Gardula.Application.Finance.Transactions.Services;
 using Gardula.Domain.Entities.Finance;
 using Gardula.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
-using Gardula.Application.Finance.Planning.DTOs;
 
 namespace Gardula.Infrastructure.Finance.Repositories;
 
@@ -549,4 +550,55 @@ public class TransactionRepository : ITransactionRepository
 
         _context.Transactions.RemoveRange(transactions);
     }
+
+
+    public async Task<List<MonthlyEvolutionResponse>> GetMonthlyEvolutionAsync(
+        int userId,
+        TransactionFilterRequest filter,
+        CancellationToken cancellationToken = default)
+    {
+        var query = _context.Transactions
+            .Where(t => t.UserId == userId);
+
+        if (filter.StartDate.HasValue)
+        {
+            query = query.Where(t => t.Date >= filter.StartDate.Value);
+        }
+
+        if (filter.EndDate.HasValue)
+        {
+            query = query.Where(t => t.Date <= filter.EndDate.Value);
+        }
+
+        var monthlyData = await query
+            .Where(t =>
+                t.Type == TransactionType.Income ||
+                t.Type == TransactionType.Expense)
+            .GroupBy(t => new
+            {
+                t.Date.Year,
+                t.Date.Month
+            })
+            .Select(g => new
+            {
+                g.Key.Year,
+                g.Key.Month,
+                TotalIncome = g.Sum(t =>
+                    t.Type == TransactionType.Income ? t.Amount : 0m),
+                TotalExpense = g.Sum(t =>
+                    t.Type == TransactionType.Expense ? t.Amount : 0m)
+            })
+            .OrderBy(g => g.Year)
+            .ThenBy(g => g.Month)
+            .ToListAsync(cancellationToken);
+
+        return monthlyData
+            .Select(g => new MonthlyEvolutionResponse(
+                g.Year,
+                g.Month,
+                g.TotalIncome,
+                g.TotalExpense))
+            .ToList();
+    }
+
 }
