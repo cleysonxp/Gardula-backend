@@ -1,51 +1,51 @@
 # Gardula Backend
 
-Backend da aplicação **Gardula**, um sistema de gerenciamento financeiro pessoal desenvolvido com **C# e .NET 8**.
+Backend for **Gardula**, a personal finance management application developed with **C# and .NET 8**.
 
-O projeto foi desenvolvido com uma arquitetura modular, separando responsabilidades entre API, regras de aplicação, domínio e infraestrutura.
-
----
-
-## Sobre o projeto
-
-O Gardula tem como objetivo centralizar o controle da vida financeira do usuário, permitindo o gerenciamento de contas, cartões, transações e outras movimentações financeiras.
-
-O backend é responsável por disponibilizar uma API REST para o frontend da aplicação, além de concentrar as regras de negócio, autenticação, persistência e acesso aos dados.
+The project follows a modular architecture, separating responsibilities across the API, application logic, domain, and infrastructure layers.
 
 ---
 
-## Funcionalidades
+## About the Project
 
-Atualmente, o backend possui suporte para:
+Gardula aims to centralize personal financial management, allowing users to manage accounts, credit cards, transactions, and other financial activities.
 
-- Cadastro de usuários
-- Autenticação de usuários
+The backend provides a REST API for the frontend and handles business rules, authentication, data persistence, and data access.
+
+---
+
+## Features
+
+The backend currently supports the following features:
+
+- User registration
+- User authentication
 - Login
-- Refresh Token
+- Refresh token
 - Logout
-- Consulta do usuário autenticado
-- Gerenciamento de contas
-- Gerenciamento de cartões
-- Criação de transações
-- Edição de transações
-- Exclusão de transações
-- Transferências entre contas
-- Compras utilizando cartão de crédito
-- Compras parceladas
-- Pagamento de fatura
-- Gerenciamento de parcelas
-- Resumos financeiros
-- Filtros por período
-- Filtros de transações
-- Paginação
-- Ordenação de transações
-- Visões consolidadas para dashboard
+- Authenticated user information
+- Account management
+- Credit card management
+- Transaction creation
+- Transaction updates
+- Transaction deletion
+- Transfers between accounts
+- Credit card purchases
+- Installment purchases
+- Credit card invoice payments
+- Installment management
+- Financial summaries
+- Date range filtering
+- Transaction filtering
+- Pagination
+- Transaction sorting
+- Consolidated dashboard data
 
 ---
 
-## Arquitetura
+## Architecture
 
-O backend está organizado em diferentes projetos, separando as responsabilidades da aplicação.
+The backend is organized into separate projects, each with its own application responsibilities.
 
 ```text
 Gardula
@@ -55,3 +55,75 @@ Gardula
 ├── Gardula.Domain
 ├── Gardula.Infrastructure
 └── Gardula.UnitTests
+```
+
+### Project Responsibilities
+
+- **Gardula.Api** — API endpoints and HTTP request handling.
+- **Gardula.Application** — application services and business use cases.
+- **Gardula.Domain** — domain entities and business concepts.
+- **Gardula.Infrastructure** — data persistence and infrastructure implementations.
+- **Gardula.UnitTests** — unit tests for application components.
+
+---
+
+## Technologies
+
+- C#
+- .NET 8
+- ASP.NET Core Web API
+- Entity Framework Core
+- MySQL
+- JWT authentication
+
+---
+
+## Getting Started
+
+### Prerequisites
+
+- .NET 8 SDK
+- MySQL
+- Git
+
+### Installation
+
+Clone the repository:
+
+```bash
+git clone <repository-url>
+```
+
+Navigate to the project directory:
+
+```bash
+cd <repository-folder>
+```
+
+Configure the database connection and the required authentication settings.
+
+Run the API:
+
+```bash
+dotnet run --project Gardula.Api
+```
+
+The API address will be displayed in the terminal.
+
+---
+
+## API Documentation
+
+If Swagger is enabled in the current environment, it can be used to explore the available endpoints and test API requests.
+
+---
+
+## Project Status
+
+The project has reached the MVP stage and is entering a personal validation phase. The next steps focus on using the application in real-world scenarios, identifying issues, and implementing improvements based on actual usage.
+
+---
+
+## About
+
+Gardula is a personal project developed to apply software engineering concepts to a practical financial management system, focusing on modular architecture, business rules, REST API development, and maintainable code.
